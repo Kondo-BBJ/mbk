@@ -148,32 +148,25 @@
 }
 
 .pdf-zoomer {
-    /* Define the visible window size (e.g., 900px wide) */
     width: 900px;
     height: 1000px;
-    
-    /* Enable horizontal scrolling for the container */
-    overflow-x: scroll;
-    
-    /* Hide vertical overflow */
+    overflow-x: scroll; 
     overflow-y: hidden;
 }
 
 .pdf-zoomer iframe {
-    /* Set the iframe's visual size (before scaling) to be smaller than the container
-       This is a key difference from the last attempt */
-    width: 100%;
     height: 100%;
-
-    /* Force the entire iframe content to zoom */
+    
+    /* Reduced zoom to 130% for less chop */
     transform-origin: top left;
+    transform: scale(1.3); 
     
-    /* ⬅️ CRITICAL: Set your desired zoom factor here (e.g., 1.5 = 150%) */
-    transform: scale(1.5); 
+    /* Compensation for the 1.3 scale */
+    width: calc(100% * 1.3); 
+    height: calc(100% * 1.3);
     
-    /* Important: Compensate for the scaling so the iframe content overflows its parent */
-    width: calc(100% * 1.5); 
-    height: calc(100% * 1.5); 
+    /* Adjust initial position (Center the view) */
+    margin-left: -100px; /* Start with -100px and adjust */
 }
 		
         /* --- Footer --- */
@@ -600,6 +593,7 @@
 </body>
 
 </html>
+
 
 
 

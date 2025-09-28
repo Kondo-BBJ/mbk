@@ -147,27 +147,33 @@
     overflow-y: hidden;
 }
 
-.pdf-scaler {
-    /* This defines the visible screen area (the 'viewport') */
-    width: 900px; /* Adjust this to define the area where scrollbars appear */
-    height: 1000px; 
-
-    /* Force horizontal scrollbar when content overflows */
-    overflow-x: scroll; 
+.pdf-zoomer {
+    /* Define the visible window size (e.g., 900px wide) */
+    width: 900px;
+    height: 1000px;
     
-    /* Prevent unwanted vertical scrolling on the container itself */
+    /* Enable horizontal scrolling for the container */
+    overflow-x: scroll;
+    
+    /* Hide vertical overflow */
     overflow-y: hidden;
 }
 
-.pdf-scaler iframe {
-    /* 1. Set the iframe to 100% of the container's height */
+.pdf-zoomer iframe {
+    /* Set the iframe's visual size (before scaling) to be smaller than the container
+       This is a key difference from the last attempt */
+    width: 100%;
     height: 100%;
 
-    /* 2. IMPORTANT: Shrink the iframe's *initial* size based on the zoom factor.
-       If scale is 1.5, initial size is 100/1.5 ≈ 66.6% */
+    /* Force the entire iframe content to zoom */
     transform-origin: top left;
-    transform: scale(1.5); /* ⬅️ Adjust this value to control the zoom */
-    width: calc(100% / 1.5); 
+    
+    /* ⬅️ CRITICAL: Set your desired zoom factor here (e.g., 1.5 = 150%) */
+    transform: scale(1.5); 
+    
+    /* Important: Compensate for the scaling so the iframe content overflows its parent */
+    width: calc(100% * 1.5); 
+    height: calc(100% * 1.5); 
 }
 		
         /* --- Footer --- */
@@ -562,7 +568,7 @@
     'library': `<iframe title="Library" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=22d7de6d-ebaa-4ef8-a9bf-4ad89ab77877&autoAuth=true&ctid=ffb76b20-b480-4230-8bf5-23ec920b1ce3" frameborder="0" allowFullScreen="true"></iframe>`,
     'contact': `<a href="mailto:kkondo@bullbearjapan.com,Kazutos.Kondo@mitsui.com">Contact</a>`,
 
- 'risk-return': `<div class="pdf-scaler"><iframe src="https://1drv.ms/b/c/a495e5b939c4b557/IQRXtcQ5ueWVIICkOhYBAAAAAdfzV-ZQM8rHYC13iPyIysM" width="100%" height="1000" frameborder="0" scrolling="no"></iframe></div>`,
+ 'risk-return': `<div class="pdf-zoomer"><iframe src="https://1drv.ms/b/c/a495e5b939c4b557/IQRXtcQ5ueWVIICkOhYBAAAAAdfzV-ZQM8rHYC13iPyIysM" width="900" height="1000" frameborder="0" scrolling="no"></iframe></div>`,
  
 		   
 };
@@ -594,6 +600,7 @@
 </body>
 
 </html>
+
 
 
 

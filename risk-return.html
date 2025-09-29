@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>トレーディングとはギャンブルなのか?</title>
+    
+    <style>
+        /* General Reset and Base Styles */
+        body {
+            font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+            line-height: 1.8;
+            color: #333;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+
+        /* Page Container (mimics the document's width and centers it) */
+        .container {
+            max-width: 800px; /* Standard document width */
+            margin: 0 auto;
+            padding: 30px;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+/* 新しく追加するCSSクラス */
+.centered-condition {
+    text-align: center; /* 全体を中央揃えにする */
+    margin: 30px auto; /* 上下にスペースを確保し、中央に配置 */
+    line-height: 2.0; /* 行間を広くする */
+    font-size: 1.1em; /* わずかに文字を大きくする */
+}
+.centered-condition p {
+    margin: 10px 0; /* 各行の上下にさらにスペースを追加 */
+}
+
+        /* Headings */
+        .main-title {
+            font-size: 1.8em;
+            text-align: center;
+            border-bottom: 2px solid #ccc;
+            padding-bottom: 10px;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            font-size: 1.1em;
+            text-align: center;
+            margin-bottom: 30px;
+            color: #555;
+        }
+
+        /* Horizontal Rule for page break separation */
+        hr {
+            border: none;
+            border-top: 1px dashed #ccc;
+            margin: 40px 0;
+        }
+
+        /* Case Formulas (to align the math nicely) */
+        .case-section {
+            margin: 15px 0 25px 30px;
+        }
+
+        .case-row {
+            display: flex;
+            margin-bottom: 5px;
+            line-height: 1.5;
+        }
+
+        .case-label {
+            flex-basis: 100px;
+            flex-shrink: 0;
+            font-weight: bold;
+        }
+
+        .case-formula {
+            flex-grow: 1;
+            text-align: left;
+        }
+
+        .case-result {
+            flex-basis: 70px;
+            flex-shrink: 0;
+            text-align: right;
+            font-weight: bold;
+        }
+
+        /* Formula Box (for the highlighted formula/equation lines) */
+        .formula-box {
+            text-align: center;
+            border: 1px solid #ccc;
+            padding: 8px;
+            margin: 20px auto;
+            max-width: 600px; /* Keep it narrower than the main content */
+            background-color: #f9f9f9;
+        }
+
+        /* Condition List (Ordered List) */
+        .condition-list {
+            list-style-type: none;
+            padding-left: 30px;
+            margin: 20px 0;
+        }
+
+        .condition-list li {
+            margin-bottom: 5px;
+        }
+
+        /* Investment and Balance Sheet Tables (simple two-column layout) */
+        .investment-table,
+        .balance-sheet-table {
+            width: 60%;
+            max-width: 400px;
+            margin: 20px auto;
+            border-collapse: collapse;
+        }
+
+        .investment-table td,
+        .balance-sheet-table td,
+        .balance-sheet-table th {
+            border: 1px solid #ccc;
+            padding: 8px 15px;
+        }
+
+        .investment-table td:nth-child(2) {
+            text-align: right;
+            font-weight: bold;
+            width: 30%;
+        }
+
+        /* Balance Sheet Table Styling */
+        .balance-sheet-table thead th {
+            background-color: #eee;
+            text-align: center;
+        }
+        .balance-sheet-table tbody td {
+            text-align: center;
+            font-weight: bold;
+        }
+
+        /* Chart Section (for the image/table on page 2) */
+        .chart-section {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .chart-title {
+            font-size: 1.3em;
+            margin-bottom: 10px;
+        }
+
+        /* Placeholder for the chart images */
+   .chart-placeholder {
+    /* background-color: #eee; If you want to remove the grey background, comment this out too */
+    border: none; /* <--- REMOVES THE DOTTED LINE */
+    min-height: auto; /* <--- Allows the image to dictate the height, removing excess vertical space */
+    display: flex; /* Keep flexbox to ensure horizontal centering */
+    justify-content: center; /* Keep to horizontally center the image */
+    align-items: center; /* Keep to vertically center if min-height was still used and image was smaller */
+    margin-bottom: 0; /* <--- Removes space below the image. Adjust if you need some spacing. */
+    padding: 0; /* Ensures no internal padding is adding space */
+}
+
+        .chart-caption {
+            font-style: italic;
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .chart-note {
+            font-weight: bold;
+            color: red;
+            margin-top: 15px;
+            line-height: 1.4;
+        }
+
+        /* Chart Data Table (mimics the bottom table under the chart) */
+        .chart-data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+            text-align: center;
+        }
+
+        .chart-data-table td {
+            border: 1px solid #aaa;
+            padding: 5px;
+        }
+        .chart-data-table thead td {
+            font-weight: bold;
+            background-color: #e0e0e0;
+        }
+        .chart-data-table tbody tr td:first-child {
+            font-weight: bold;
+            background-color: #f0f0f0;
+        }
+
+/* Sub-headings */
+h2 {
+    font-size: 1.2em;
+    margin-top: 30px;
+    margin-bottom: 15px;
+    /* ⬇️ これを追加・変更します */
+    text-align: center; 
+}
+
+
+        /* Contact Information */
+        .contact-info {
+            text-align: right;
+            margin-top: 50px;
+            padding-top: 15px;
+            border-top: 1px solid #ccc;
+            line-height: 1.6;
+        }
+        .contact-info .date {
+            font-size: 0.9em;
+            color: #777;
+            margin-bottom: 10px;
+        }
+    </style>
+    </head>
+<body>
+
+    <div class="container">
+        <h1 class="main-title">トレーディングとはギャンブルなのか? はたまた投資は?</h1>
+        <p class="subtitle">(運とリスク・リターンの関係について)</p>
+
+        <p>「もし私にジャンケンで勝ったら200万円あげます。でも負けたら200万円差し出しなさい。」と言われても、あなたはこの勝負に挑まないでしょう。なぜならそこに<strong>優位性</strong> (トレードの世界ではしばしば<strong>エッジ</strong>とも言う)がないからです。それでは、「じゃあ、勝ったら300万円あげるよ。」と言われたらどうしますか? エッジが生まれました。期待値はゼロから一気に50万円に上がりました。一度ジャンケンに勝つだけで平均50万円が手に入るのです。</p>
+
+        <div class="case-section">
+            <div class="case-row">
+                <span class="case-label">ケース1:</span>
+                <span class="case-formula">+200万円×0.5+(-200万円×0.5) =</span>
+                <span class="case-result">+/-0円</span>
+            </div>
+            <div class="case-row">
+                <span class="case-label">ケース2:</span>
+                <span class="case-formula">+300万円×0.5+(-200万円×0.5) =</span>
+                <span class="case-result">+50万円</span>
+            </div>
+            <p class="formula-box">期待値=平均利益×勝率+平均損失×(1-勝率)</p>
+        </div>
+
+        <p>期待値がプラス、つまり優位性がある取引機会です。さてあなたはこの勝負に挑みますか?</p>
+
+        <p>殆どの人は期待値がプラスになったとはいえ、やはり自腹では勝負に挑まないでしょう。なぜでしょうか? 一度に200万円を失う可能性が残るからです。この損失の可能性を<strong>リスク</strong>といいます。多くの人 は (特に日本人の場合はなおさら) リスクを嫌います。もし200万円が貯金全額だとしたら絶対勝負し ないでしょう。</p>
+
+        <p>それでは次のケースはどうでしょうか?</p>
+
+        <p>「ジャンケンで勝ったら50万円あげます。負けてもペナルティはないよ。」</p>
+
+        <div class="case-section">
+            <div class="case-row">
+                <span class="case-label">ケース3:</span>
+                <span class="case-formula">+50万円×0.5+0円×0.5 =</span>
+                <span class="case-result">+50万円</span>
+            </div>
+        </div>
+
+        <p>期待値は2番目のケースと全く同じ50万円なのですが、今回は100人中100人が挑戦するはずです。なぜなら負けても一円も取られない、つまりリスクが無いからです。</p>
+
+        <p>実際の市場でこのような取引機会はあったとしても、皆が参入するためあっという間に消え去ります。もしこのようなフリーランチの機会が継続的にあるとすれば、それは規制や談合に守られた市場です。残念ながら開かれた市場ではリスクから逃げることはできません。</p>
+
+        <p>それでも以下のように条件を変更すれば、あなたは挑戦してみようと思うはずです。</p>
+
+        <p>「ジャンケンで勝ったら300円あげます。負けたら200円払ってください。これを1万回繰り返しましょう。」</p>
+       
+        <p>期待値は同じ50万円。リスクも最大200万円あります。1万回連続負けない可能性がゼロとは言い切れないからです。</p>
+        
+        <div class="case-section">
+            <div class="case-row">
+                <span class="case-label">ケース4:</span>
+                <span class="case-formula">{+300円×0.5+(-200円×0.5)}×10000 =</span>
+                <span class="case-result">+50万円</span>
+            </div>
+        </div>
+        
+        <p>期待通り50万円儲けたあなたは、この勝負をもっと続けたいと思うはずです。すると胴元は更なる提案をしてきました。</p>
+
+        <p>「金額を300円・200円から30万円・20万円にして10回勝負にしましょう。1万回もジャンケンするのは面倒です。」</p>
+        
+        <div class="case-section">
+            <div class="case-row">
+                <span class="case-label">ケース5:</span>
+                <span class="case-formula">{+30万円×0.5+(-20万円×0.5)}×10 =</span>
+                <span class="case-result">+50万円</span>
+            </div>
+        </div>
+
+        <p>少し悩むかもしれません。なぜなら1万回連続負けることはなくても10回連続負けることならよりありえそうだからです。</p>
+
+        <p>取引回数を増やせば増やすほど結果が期待値に近づいていくことを<strong>大数の法則</strong>といいます。一方で期待値からの振れを<strong>偏差</strong>といい、これが「運」の正体です。</p>
+
+        <div class="chart-section">
+            <h2 class="chart-title">“運”と大数の法則 (勝率50%)</h2>
+            <div class="chart-placeholder">
+                  
+                <img src="law-of-large-numbers.png" alt="運と大数の法則を示す正規分布の図" style="max-width: 100%; height: auto;">
+            </div>
+           
+        </div>
+
+        <hr>
+        <p>リスクを避けたがる一方で、期待値がマイナスにもかかわらず多くの人が宝くじや馬券にお金をつぎ込みます。期待値がマイナスの取引に参加することを<strong>ギャンブル</strong>といいます。言い方を変えれば運によってのみ勝つ可能性がある勝負事をギャンブルと呼びます。</p>
+        
+        <p>宝くじの期待値は五割未満。1万円分くじを買うと平均4500円ほど戻る計算になります。競馬は25%をJRAが寺銭として持っていきますので無作為に馬券を買えば期待値は75%となります。競馬で勝ち続けるには的中率を上げて、的中率×オッズ (払戻率) マイナス1の値(つまり期待値)をプラスにしなければなりませんが、至難の業です。</p>
+
+        <p>トレーディングは儲からない、危ないという人が商社内でさえ多いのに、宝くじや競馬が危ないとはどこでも聞きません。なぜなら宝くじや競馬での掛け金が資産に対して相対的に小さいため、破産する可能性が非常に低いからです。しかし大数の法則に倣えばギャンブルを続ける限り最後は負けます。負ける前に死ぬ人がいれば、彼は運が良かったということになります。</p>
+
+        <p>昔、ブラックボックス (UGCが以前入っていたビル) の1階で毎週宝くじを買っていたトレーダーがいましたが、やはり彼はトレーダーとしては全く成功しませんでした。宝くじが当たる前にリストラ対象になり会社を去りました。</p>
+
+        <p>リスクを取りたくないからサラリーマンになったのに、宝くじや競馬、パチンコに稼ぎをつぎ込む人がいるのは何とも皮肉です。</p>
+
+        <p>もしトレーディングがギャンブルになりうるのであれば期待値がマイナスの中で勝負しているか、一度に取るリスク(最大損失額)が資産に対して大きすぎるかのどちらかです。つまりトレーディングや投資は以下の条件が揃えばギャンブルになりえるのです。(その逆はありえません。)</p>
+
+        <div class="centered-condition">
+    <p style="font-weight: bold;">条件 1: 期待値がマイナスである</p>
+    <p>または（あるいは両方）</p>
+    <p style="font-weight: bold;">条件 2: リスク（可能な最大損失額）が許容範囲を超えている</p>
+</div>
+
+        <p>一度に取るリスクが大きすぎるとギャンブルになるって? それって最近の大型投資のことかもしれません。</p>
+
+        <table class="investment-table">
+            <tr><td>伊藤忠・CP</td><td>6,000億</td></tr>
+            <tr><td>丸紅・ガビロン</td><td>3,000億</td></tr>
+            <tr><td>三菱商事・Olam</td><td>1,300億</td></tr>
+            <tr><td>三井・マルチグレイン</td><td>400億</td></tr>
+            <tr><td>豊田通商・NovaAgri</td><td>300億</td></tr>
+        </table>
+
+        <hr>
+        
+        <p>もし期待値がプラスで、なおかつ無限大の資本がある、または無限大に借入ができるのなら、継続して大型案件を増やし続ければ最終的には大数の法則が働き、何も慌てる必要はないでしょう。損を出したとしても一連の正しい取引の中の一つに過ぎないからです。期待値がマイナスなら、まさしくギャンブル、運任せ。えっ、こんな大きな案件の期待値がプラスかマイナスかなんて分からないだって? そのために現場に出向き、徹底的に調査しているはずなのですが、実は本当の意味でのトレーディング経験がない人が投資判断をしているため、なおさら期待値がつかめないのが実情なのかもしれませんません。</p>
+
+        <p>例えば投資額が400億、ある一定期間の期待利益が1600億だとしても的中率が20%未満であれば期待値はマイナスになってしまいます。金利や償却などを考えると現実はもっと大変です。</p>
+        
+        <p class="formula-box">1600億×20%+400億×80%=ゼロ</p>
+
+        <p>もし的中率が20%以上あれば投資し続ければ良く、仮に期待利益が少なくてもそれ以上に的中率が高ければ問題ありません。</p>
+
+        <p>期待値がマイナス、あるいはよく分からないにも関わらずリターンを求めているなら、それこそがギャンブルつまり運頼みです。</p>
+
+        <p>「いえ、それでも投資はギャンブルでは無い。」と主張する人がいるのも事実です。なぜなら設備や企業に投資した場合、その物件は資産としてB/S上残るからです。問題は資産を高掴みしているため、実際には資産価値の目減りが激しい、もしB/Sで減っていないとするなら正しい時価評価がされていない、さもなければ資本が十分すぎるほどたっぷりあるため痛くも痒くもないかのどれかなのでしょう。最近のノーブルグループなどの会計問題に象徴されます。</p>
+
+       <h2 class="sub-title">投資後のバランスシート</h2>
+        <table class="balance-sheet-table">
+            <tbody>
+                <tr>
+                    <td rowspan="2" class="col-asset">資産 (投資物件) <br> <span style="text-decoration: underline;">本当の価値は?</span></td>
+                    <td colspan="2" class="col-liability">負債 (借入金など)</td>
+                </tr>
+                <tr>
+                    <td colspan="2" class="col-liability">資本 (資本金など)</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <hr>
+
+        <p>穀物価格が需給バランスにより上下するのと同様に、投資に対する期待値 (リスク・リターン割合)も需給によって上下します。皆が投資したい時は資産取得額も割高になっており、高リターンが見込めないだけでなく資産価値の下落リスクも付きまといます。一方、誰もリスクを取りたくない時にこそ期待値が高くなる(リスク料が相対的に安くなっている)のは穀物や他商品の需給と価格の相関関係と全く同じです。</p>
+
+        <p>以下に、商品価格指数の推移とリーマンショック、投資ブームの時期を重ねてみます。</p>
+        
+
+
+        <div class="chart-section">
+            <h2 class="chart-note">全ての行動が正反対のタイミングで<br>行われているではないか!?</h2>
+
+            <div class="chart-placeholder">
+                  
+                <img src="investment-timing.png" alt="運と大数の法則を示す正規分布の図" style="max-width: 100%; height: auto;">
+            </div>
+        </div>
+
+        <p>トレーディングも投資もビジネスである以上期待値がプラスの時にポジションを取らなければなりません。もしトレーディングが大規模投資よりも有利な点があるとすれば、それは試行回数が多いため運に左右されにくいことと、一回毎の損失額が小さいため破産する確率が低く何度でも挑戦し続けることができ、正の期待値さえ持ち続ければ永続的に勝つことができることでしょう。そのためにはトレーダーのスキルや経験が非常に大切になりますが。</p>
+
+        <p>逆に期待値がマイナス (あるいは不明確) にもかかわらず各社が間違った巨額投資を続ける背景には、試行回数が少ないがゆえに運が悪かった - 環境の変化のせい、価格下落のせい (ヘッジしないの?) ―ことにしやすい、また多くの人材の異動が重なるほどの長期間にわたるポジションな為、責任の所在をあいまいにしやすいなどの原因があるのではないでしょうか。もちろん日本の大企業の多くが、社長や役員でさえも雇われであるが故、自腹が痛まず、ブレーキがかからない傾向もあるのかもしれません。</p>
+
+        <p>逆にリーマンショック時や大震災時のような絶好のチャンスを逃してしまう原因には、トレード経験の欠如が大きく影響しているように思えます。</p>
+
+        <div class="contact-info">
+            <p class="date">2015年11月</p>
+            <p><strong>近藤和才</strong></p>
+            <p>株式会社ブルベアジャパン 代表取締役</p>
+            <p>ご意見等は<a href="mailto:kkondo@bullbearjapan.com">kkondo@bullbearjapan.com</a> まで</p>
+        </div>
+
+    </div>
+
+</body>
+</html>

@@ -135,6 +135,43 @@
             border: none;
         }
 
+		.pdf-container {
+    /* 1. Define the visible window size (the size you want the viewer to be) */
+    width: 600px; /* Adjust this width to control the scroll area */
+    height: 1000px;
+    
+    /* 2. Enable horizontal scrolling for the container */
+    overflow-x: scroll; 
+    
+    /* 3. Hide the vertical overflow if you don't want vertical scrollbars */
+    overflow-y: hidden;
+}
+
+.pdf-zoomer {
+    /* Container size - Keep this fixed */
+    width: 900px; 
+    height: 1000px;
+    overflow-x: hidden; /* Change to HIDDEN if you don't need horizontal scroll */
+    overflow-y: hidden;
+    
+    /* Optional: Center the entire container on the webpage */
+    margin: 0 auto; 
+}
+
+.pdf-zoomer iframe {
+    height: 100%;
+    
+    /* Zoom factor */
+    transform-origin: top left;
+    transform: scale(1.3); 
+    
+    /* Compensation */
+    width: calc(100% * 1.3); 
+    height: calc(100% * 1.3);
+    
+    /* ⬅️ CRITICAL: Centering Adjustment */
+    margin-left: -100px; /* Adjust this value by trial and error */
+}
 		
         /* --- Footer --- */
         footer {
@@ -528,7 +565,7 @@
     'library': `<iframe title="Library" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=22d7de6d-ebaa-4ef8-a9bf-4ad89ab77877&autoAuth=true&ctid=ffb76b20-b480-4230-8bf5-23ec920b1ce3" frameborder="0" allowFullScreen="true"></iframe>`,
     'contact': `<a href="mailto:kkondo@bullbearjapan.com,Kazutos.Kondo@mitsui.com">Contact</a>`,
 
- 'risk-return': `<iframe src="https://1drv.ms/b/c/a495e5b939c4b557/IQRXtcQ5ueWVIICkOhYBAAAAAdfzV-ZQM8rHYC13iPyIysM" width="900" height="1000" frameborder="0" scrolling="no"></iframe>`,
+ 'risk-return': `<div class="pdf-zoomer"><iframe src="https://1drv.ms/b/c/a495e5b939c4b557/IQRXtcQ5ueWVIICkOhYBAAAAAdfzV-ZQM8rHYC13iPyIysM" width="900" height="1000" frameborder="0" scrolling="no"></iframe></div>`,
  'investment': `<iframe src="https://1drv.ms/p/c/a495e5b939c4b557/IQSHSoKTmpjpTZbN94o4wbpDAe7O-uPExoIfCkotdE5OB3M" width="402" height="327" frameborder="0" scrolling="no"></iframe>`,
  
 		   
@@ -561,42 +598,4 @@
 </body>
 
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

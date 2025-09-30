@@ -37,13 +37,19 @@
             background-color: #2980b9; 
         }
 
-        /* Defining a specific class for the primary blue text */
-        .text-primary-blue {
-            color: var(--primary-blue);
+        /*
+        CRITICAL FIX: Applying the color with !important to ensure it overrides 
+        browser defaults for <a> tags (like :visited) in the iframe environment.
+        */
+        .email-link {
+            color: var(--primary-blue) !important; /* Sets the correct blue and enforces it */
+            text-decoration: none; /* Removes the default link underline */
+            display: inline-block; 
+            transition: color 0.3s;
         }
-        /* Corrected: Apply hover to the parent link for consistency */
-        .email-link:hover .text-primary-blue { 
-            color: #2980b9; /* Darker blue on hover */
+        .email-link:hover { 
+            color: #2980b9 !important; /* Darker blue on hover and enforces it */
+            text-decoration: underline; /* Adds underline back on hover for feedback */
         }
     </style>
 </head>
@@ -75,17 +81,13 @@
             </p>
 
             <!-- Display Email Address in Blue, linked to mailto -->
-            <a href="mailto:kkondo@bullbearjapan.com" class="email-link">
-                <!-- CORRECTED: Removed the invalid class "text-primary-blue:hover" -->
-                <span class="text-2xl sm:text-3xl font-extrabold transition duration-300 text-primary-blue">
-                    kkondo@bullbearjapan.com
-                </span>
+            <a href="mailto:kkondo@bullbearjapan.com" class="email-link text-2xl sm:text-3xl font-extrabold transition duration-300">
+                kkondo@bullbearjapan.com
             </a>
             
             <hr class="my-10 border-gray-200">
 
             <!-- Call to Action (Matches the blue button style) -->
-            <!-- The primary-button class already uses the correct color via var(--primary-blue) -->
             <a href="mailto:kkondo@bullbearjapan.com" class="primary-button hover:shadow-md">
                 Send an Email Now
             </a>

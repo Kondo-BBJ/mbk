@@ -41,7 +41,8 @@
         .text-primary-blue {
             color: var(--primary-blue);
         }
-        .text-primary-blue:hover {
+        /* Corrected: Apply hover to the parent link for consistency */
+        .email-link:hover .text-primary-blue { 
             color: #2980b9; /* Darker blue on hover */
         }
     </style>
@@ -75,8 +76,8 @@
 
             <!-- Display Email Address in Blue, linked to mailto -->
             <a href="mailto:kkondo@bullbearjapan.com" class="email-link">
-                <!-- Applied the new CSS class for primary blue text -->
-                <span class="text-2xl sm:text-3xl font-extrabold transition duration-300 text-primary-blue text-primary-blue:hover">
+                <!-- CORRECTED: Removed the invalid class "text-primary-blue:hover" -->
+                <span class="text-2xl sm:text-3xl font-extrabold transition duration-300 text-primary-blue">
                     kkondo@bullbearjapan.com
                 </span>
             </a>

@@ -8,9 +8,9 @@
     <!-- Using Tailwind CSS for modern, site-matching styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Define corporate blue and use Inter font */
+        /* Define corporate blue using the explicit hex code #3498db */
         :root {
-            --primary-blue: #3498db; /* Tailwind's blue-500 */
+            --primary-blue: #3498db; 
         }
         body {
             font-family: 'Inter', sans-serif;
@@ -24,6 +24,7 @@
         .primary-button {
             display: inline-block;
             padding: 1rem 2rem;
+            /* Using the CSS variable, which is #3498db */
             background-color: var(--primary-blue);
             color: white;
             font-weight: 600;
@@ -32,7 +33,16 @@
             transition: background-color 0.3s;
         }
         .primary-button:hover {
-            background-color: #2563eb; /* Darker blue on hover */
+            /* Using a slightly darker shade for the hover effect (e.g., #2980b9) */
+            background-color: #2980b9; 
+        }
+
+        /* Defining a specific class for the primary blue text */
+        .text-primary-blue {
+            color: var(--primary-blue);
+        }
+        .text-primary-blue:hover {
+            color: #2980b9; /* Darker blue on hover */
         }
     </style>
 </head>
@@ -65,7 +75,8 @@
 
             <!-- Display Email Address in Blue, linked to mailto -->
             <a href="mailto:kkondo@bullbearjapan.com" class="email-link">
-                <span class="text-2xl sm:text-3xl font-extrabold text-blue-600 transition duration-300 hover:text-blue-700">
+                <!-- Applied the new CSS class for primary blue text -->
+                <span class="text-2xl sm:text-3xl font-extrabold transition duration-300 text-primary-blue text-primary-blue:hover">
                     kkondo@bullbearjapan.com
                 </span>
             </a>
@@ -73,6 +84,7 @@
             <hr class="my-10 border-gray-200">
 
             <!-- Call to Action (Matches the blue button style) -->
+            <!-- The primary-button class already uses the correct color via var(--primary-blue) -->
             <a href="mailto:kkondo@bullbearjapan.com" class="primary-button hover:shadow-md">
                 Send an Email Now
             </a>
@@ -86,4 +98,3 @@
 
 </body>
 </html>
-

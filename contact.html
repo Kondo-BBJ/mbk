@@ -11,6 +11,7 @@
         /* Define corporate blue using the explicit hex code #3498db */
         :root {
             --primary-blue: #3498db; 
+            --hover-blue: #2980b9; /* Slightly darker shade for consistency */
         }
         body {
             font-family: 'Inter', sans-serif;
@@ -20,35 +21,48 @@
             margin: 0;
             padding: 0; 
         }
-        /* Custom styles for the blue button look */
+        
+        /* FIX 2: Ensure the primary button colors are applied robustly in all states 
+        and use the defined CSS variables. 
+        */
         .primary-button {
             display: inline-block;
             padding: 1rem 2rem;
-            /* Using the CSS variable, which is #3498db */
             background-color: var(--primary-blue);
             color: white;
             font-weight: 600;
             border-radius: 0.5rem;
             text-decoration: none;
             transition: background-color 0.3s;
+            /* Use !important on background color for maximum certainty */
+            background-color: var(--primary-blue) !important;
         }
-        .primary-button:hover {
-            /* Using a slightly darker shade for the hover effect (e.g., #2980b9) */
-            background-color: #2980b9; 
+        .primary-button:hover,
+        .primary-button:focus {
+            /* Use !important on hover background color for maximum certainty */
+            background-color: var(--hover-blue) !important; 
         }
 
         /*
-        CRITICAL FIX: Applying the color with !important to ensure it overrides 
-        browser defaults for <a> tags (like :visited) in the iframe environment.
+        FIX 1: CRITICAL FIX for Email Link Color. 
+        Target the <a> tag explicitly for all link states to override browser defaults.
         */
         .email-link {
-            color: var(--primary-blue) !important; /* Sets the correct blue and enforces it */
             text-decoration: none; /* Removes the default link underline */
             display: inline-block; 
             transition: color 0.3s;
         }
-        .email-link:hover { 
-            color: #2980b9 !important; /* Darker blue on hover and enforces it */
+        
+        /* Apply the primary blue to all non-hover states (link, visited) with !important */
+        .email-link:link, 
+        .email-link:visited { 
+            color: var(--primary-blue) !important; 
+        }
+
+        /* Apply the hover blue when the mouse is over the link */
+        .email-link:hover,
+        .email-link:focus { 
+            color: var(--hover-blue) !important; /* Darker blue on hover and enforces it */
             text-decoration: underline; /* Adds underline back on hover for feedback */
         }
     </style>

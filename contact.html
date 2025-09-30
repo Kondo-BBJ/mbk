@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Us | BullBearJapan</title>
+    
+    <!-- Using Tailwind CSS for modern, site-matching styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Define corporate blue and use Inter font */
+        :root {
+            --primary-blue: #3b82f6; /* Tailwind's blue-500 */
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.7;
+            background-color: #f8f8f8; /* Light gray background to match the website */
+            /* IMPORTANT: Removed margin/padding so it sits flush in the iframe */
+            margin: 0;
+            padding: 0; 
+        }
+        /* Custom styles for the blue button look */
+        .primary-button {
+            display: inline-block;
+            padding: 1rem 2rem;
+            background-color: var(--primary-blue);
+            color: white;
+            font-weight: 600;
+            border-radius: 0.5rem;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+        .primary-button:hover {
+            background-color: #2563eb; /* Darker blue on hover */
+        }
+    </style>
+</head>
+<body class="pt-12 pb-16">
+    <!-- 
+    The body now uses pt-12 (padding-top) and pb-16 (padding-bottom)
+    to give spacing from the parent page's header and footer.
+    The Navbar is removed since the main site provides it. 
+    -->
+
+    <!-- Main Content Container (Centered) -->
+    <div class="max-w-4xl mx-auto text-center px-4">
+
+        <!-- Main Title (Large, bold, dark) -->
+        <h1 class="text-5xl md:text-6xl font-extrabold text-gray-900 mb-6 leading-tight">
+            Get In Touch
+        </h1>
+        
+        <!-- Subheading -->
+        <p class="text-xl text-gray-600 mb-16 max-w-2xl mx-auto">
+            We are committed to providing clarity on <strong class="font-bold text-gray-800">global grain and bulk freight trading</strong>. Please use the contact details below for specific inquiries.
+        </p>
+
+        <!-- Contact Card/Box - Clean and Centered -->
+        <div class="bg-white p-10 md:p-16 rounded-xl shadow-lg border border-gray-100 mx-auto max-w-xl">
+            
+            <p class="text-lg font-medium text-gray-700 mb-8">
+                For document-related questions, media requests, or business opportunities, please send an email to <strong class="font-bold text-gray-900">Kazutoshi Kondo</strong> at the address below:
+            </p>
+
+            <!-- Display Email Address in Blue, linked to mailto -->
+            <a href="mailto:kkondo@bullbearjapan.com" class="email-link">
+                <span class="text-2xl sm:text-3xl font-extrabold text-blue-600 transition duration-300 hover:text-blue-700">
+                    kkondo@bullbearjapan.com
+                </span>
+            </a>
+            
+            <hr class="my-10 border-gray-200">
+
+            <!-- Call to Action (Matches the blue button style) -->
+            <a href="mailto:kkondo@bullbearjapan.com" class="primary-button hover:shadow-md">
+                Send an Email Now
+            </a>
+
+            <!-- Note/Disclaimer -->
+            <p class="text-sm text-gray-500 mt-12">
+                We aim to respond to all inquiries within two business days.
+            </p>
+        </div>
+    </div>
+
+</body>
+</html>

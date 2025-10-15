@@ -81,7 +81,7 @@
     </main>
 
     <script>
-        // Data for the cities - 23 unique time zones
+        // Data for the cities - updated to include Auckland, Abidjan, Lisboa, and Zurich
         const timeZones = [
             { id: 'tokyo', city: 'Tokyo', zone: 'Asia/Tokyo', country: 'Japan', continent: 'Asia' },
             { id: 'bangkok', city: 'Bangkok', zone: 'Asia/Bangkok', country: 'Thailand', continent: 'Asia' },
@@ -90,12 +90,13 @@
             { id: 'delhi', city: 'Delhi', zone: 'Asia/Kolkata', country: 'India', continent: 'Asia' },
             { id: 'moscow', city: 'Moscow', zone: 'Europe/Moscow', country: 'Russia', continent: 'Europe' },
             { id: 'cairo', city: 'Cairo', zone: 'Africa/Cairo', country: 'Egypt', continent: 'Africa' },
-            { id: 'casablanca', city: 'Casablanca', zone: 'Africa/Casablanca', country: 'Morocco', continent: 'Africa' }, // New Addition
+            { id: 'casablanca', city: 'Casablanca', zone: 'Africa/Casablanca', country: 'Morocco', continent: 'Africa' },
+            { id: 'abidjan', city: 'Abidjan', zone: 'Africa/Abidjan', country: "Côte d'Ivoire", continent: 'Africa' }, // Added Abidjan
             { id: 'nairobi', city: 'Nairobi', zone: 'Africa/Nairobi', country: 'Kenya', continent: 'Africa' },
             { id: 'johannesburg', city: 'Johannesburg', zone: 'Africa/Johannesburg', country: 'South Africa', continent: 'Africa' },
             { id: 'paris', city: 'Paris', zone: 'Europe/Paris', country: 'France', continent: 'Europe' },
-            { id: 'rome', city: 'Rome', zone: 'Europe/Rome', country: 'Italy', continent: 'Europe' },
-            { id: 'madrid', city: 'Madrid', zone: 'Europe/Madrid', country: 'Spain', continent: 'Europe' },
+            { id: 'lisboa', city: 'Lisboa', zone: 'Europe/Lisbon', country: 'Portugal', continent: 'Europe' }, // Replaced Rome
+            { id: 'zurich', city: 'Zurich', zone: 'Europe/Zurich', country: 'Switzerland', continent: 'Europe' }, // Replaced Madrid
             { id: 'london', city: 'London', zone: 'Europe/London', country: 'UK', continent: 'Europe' },
             { id: 'sao-paulo', city: 'Sao Paulo', zone: 'America/Sao_Paulo', country: 'Brazil', continent: 'Americas' },
             { id: 'chicago', city: 'Chicago', zone: 'America/Chicago', country: 'USA', continent: 'Americas' }, 
@@ -105,21 +106,21 @@
             { id: 'honolulu', city: 'Honolulu', zone: 'Pacific/Honolulu', country: 'USA', continent: 'Oceania & Pacific' },
             { id: 'guam', city: 'Guam', zone: 'Pacific/Guam', country: 'USA', continent: 'Oceania & Pacific' },
             { id: 'sydney', city: 'Sydney', zone: 'Australia/Sydney', country: 'Australia', continent: 'Oceania & Pacific' },
-            { id: 'perth', city: 'Perth', zone: 'Australia/Perth', country: 'Australia', continent: 'Oceania & Pacific' }, // New Addition
+            { id: 'perth', city: 'Perth', zone: 'Australia/Perth', country: 'Australia', continent: 'Oceania & Pacific' },
+            { id: 'auckland', city: 'Auckland', zone: 'Pacific/Auckland', country: 'New Zealand', continent: 'Oceania & Pacific' }, // Added Auckland
         ];
 
         // --- Flag and Time Calculation Helper Functions ---
 
         function getCountryCode(country) {
             const codes = {
-                'UK': 'GB', 'France': 'FR', 'Italy': 'IT', 'Spain': 'ES', 'Egypt': 'EG',
-                'Kenya': 'KE', 'South Africa': 'ZA', 'Russia': 'RU',
-                'China': 'CN', 'Japan': 'JP', 'Malaysia': 'MY', 'Singapore': 'SG',
-                'Australia': 'AU', 'USA': 'US', 'Canada': 'CA', 'Brazil': 'BR',
-                'Argentina': 'AR', 'India': 'IN',
-                'Thailand': 'TH',
-                'UAE': 'AE',
-                'Morocco': 'MA' // Added Morocco flag code
+                'UK': 'GB', 'France': 'FR', 'Portugal': 'PT', 'Switzerland': 'CH',
+                'Egypt': 'EG', 'Kenya': 'KE', 'South Africa': 'ZA', 'Russia': 'RU',
+                "Côte d'Ivoire": 'CI', // Code for Abidjan
+                'Japan': 'JP', 'Thailand': 'TH', 'UAE': 'AE', 'Singapore': 'SG', 'India': 'IN',
+                'Australia': 'AU', 'New Zealand': 'NZ', // Code for Auckland
+                'USA': 'US', 'Canada': 'CA', 'Brazil': 'BR',
+                'Morocco': 'MA'
             };
             return codes[country] || '';
         }
@@ -188,9 +189,9 @@
                     </div>
                 </div>
                 
-                <!-- Time/Date Footer - using flex for aligned elements -->
-                <div class="text-right relative z-10">
-                    <div class="flex items-center justify-end space-x-1 mb-0.5">
+                <!-- Time/Date Footer - Alignment changed to text-center -->
+                <div class="text-center relative z-10">
+                    <div class="flex items-center justify-center space-x-1 mb-0.5">
                         <!-- DST indicator aligned horizontally with time -->
                         <span id="dst-indicator-${zoneData.id}" class="text-xs text-blue-600 font-extrabold hidden px-1 py-0.5 rounded-full bg-blue-100/70 border border-blue-300" title="Daylight Saving Time is Active">DST</span> 
                         
@@ -340,7 +341,8 @@
                 if (continentGroups[continent] && continentGroups[continent].length > 0) {
                     // Create and append the continent header
                     const header = document.createElement('h2');
-                    header.className = `col-span-full text-lg font-extrabold mt-3 mb-1 pt-1.5 border-t-2 ${continent === 'Americas' ? 'border-blue-400' : 'border-blue-200'} text-gray-700`;
+                    // ADDED 'text-center' to center the continent names
+                    header.className = `col-span-full text-lg font-extrabold mt-3 mb-1 pt-1.5 border-t-2 ${continent === 'Americas' ? 'border-blue-400' : 'border-blue-200'} text-gray-700 text-center`;
                     header.textContent = continent.toUpperCase();
                     grid.appendChild(header);
 

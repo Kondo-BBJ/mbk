@@ -39,6 +39,16 @@
             align-items: center;
             gap: 0.5rem;
         }
+
+        /* --- New Custom Grid Class for Fluid Layout --- */
+        .fluid-grid {
+            /* Use CSS Grid with auto-fit for dynamic column creation */
+            display: grid;
+            gap: 1rem; /* Tailwind's gap-4 */
+            /* This line creates columns that are a minimum of 280px wide and grow equally (1fr) */
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        }
+
     </style>
     <script>
         tailwind.config = {
@@ -62,7 +72,11 @@
         <p class="text-xl text-gray-500">Live Clocks around the World</p>
     </header>
 
-    <main id="time-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 max-w-7xl mx-auto">
+    <!-- 
+        CHANGE: Replaced fixed grid classes (grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5) 
+        with the new fluid-grid class and simplified Tailwind utility classes.
+    -->
+    <main id="time-grid" class="fluid-grid max-w-7xl mx-auto">
         <!-- Time cards will be inserted here by JavaScript -->
     </main>
 
@@ -282,6 +296,7 @@
                 if (continentGroups[continent] && continentGroups[continent].length > 0) {
                     // Create and append the continent header
                     const header = document.createElement('h2');
+                    // Add col-span-full to make the header span all columns of the fluid grid
                     header.className = `col-span-full text-2xl font-extrabold mt-6 mb-3 pt-3 border-t-2 ${continent === 'Americas' ? 'border-blue-400' : 'border-blue-200'} text-gray-700`;
                     header.textContent = continent.toUpperCase();
                     grid.appendChild(header);

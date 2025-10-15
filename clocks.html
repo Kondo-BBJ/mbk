@@ -175,9 +175,11 @@
             // Use time-card base class, gradient classes will be applied in updateTime
             card.className = 'time-card p-2 rounded-xl border border-blue-300/50 flex flex-col justify-between relative';
             
+            // UPDATED: Added flex-col items-center to the main content wrapper (relative z-10) 
+            // and removed text-center from the Time/Date Footer as the parent now handles centering.
             card.innerHTML = `
                 <!-- Card Content (z-index 10 to ensure it's above the potential background) -->
-                <div class="relative z-10">
+                <div class="relative z-10 w-full flex flex-col items-center">
                     <div class="city-header mb-0.5">
                         <!-- Flag Image: Removed border classes for a cleaner look -->
                         <img src="${flagImageUrl}" alt="${zoneData.country} Flag" 
@@ -189,8 +191,8 @@
                     </div>
                 </div>
                 
-                <!-- Time/Date Footer - Alignment changed to text-center -->
-                <div class="text-center relative z-10">
+                <!-- Time/Date Footer -->
+                <div class="relative z-10">
                     <div class="flex items-center justify-center space-x-1 mb-0.5">
                         <!-- DST indicator aligned horizontally with time -->
                         <span id="dst-indicator-${zoneData.id}" class="text-xs text-blue-600 font-extrabold hidden px-1 py-0.5 rounded-full bg-blue-100/70 border border-blue-300" title="Daylight Saving Time is Active">DST</span> 
@@ -199,7 +201,7 @@
                         <div id="time-${zoneData.id}" class="time-display">--:--:--</div>
                     </div>
                     <!-- Date display, now smaller (text-xs) -->
-                    <div id="date-${zoneData.id}" class="date-display text-xs">--/--/----</div>
+                    <div id="date-${zoneData.id}" class="date-display text-xs text-center">--/--/----</div>
                 </div>
             `;
             return card;
@@ -264,7 +266,7 @@
                 timeElement.style.color = 'rgb(191, 219, 254)'; 
                 
                 // Date: Light Blue
-                dateElement.className = 'date-display text-xs text-blue-200';
+                dateElement.className = 'date-display text-xs text-blue-200 text-center'; // Added text-center here for safety
 
                 // DST Badge: White/Transparent background
                 dstElement.className = 'text-xs text-white font-extrabold px-1 py-0.5 rounded-full bg-white/30 border border-white/50';
@@ -281,7 +283,7 @@
                 timeElement.style.color = ''; 
                 
                 // Date: Subtle Gray
-                dateElement.className = 'date-display text-xs'; 
+                dateElement.className = 'date-display text-xs text-center'; // Added text-center here for safety
 
                 // DST Badge: Blue
                 dstElement.className = 'text-xs text-blue-600 font-extrabold px-1 py-0.5 rounded-full bg-blue-100/70 border border-blue-300';

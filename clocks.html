@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Time Dashboard</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for a light, professional theme */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* Light gray background (Tailwind gray-50) */
+            color: #1f2937; /* Dark text (Tailwind gray-800) */
+            min-height: 100vh;
+        }
+        .time-card {
+            background-color: white; /* Clean white card background */
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+        .time-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .time-display {
+            /* Font size for vertical compactness */
+            font-size: clamp(1.75rem, 4.5vw, 3rem); 
+            font-weight: 700;
+            color: #1d4ed8; /* Strong blue accent (Tailwind blue-700) */
+            text-shadow: 0 0 5px rgba(29, 78, 216, 0.1);
+        }
+        .date-display {
+            color: #6b7280; /* Subtle date color (Tailwind gray-500) */
+        }
+        /* Style for the flag and city name containers */
+        .city-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary-light': '#f8fafc',
+                        'accent-blue': '#1d4ed8',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="p-4 md:p-8">
+
+    <header class="text-center mb-10">
+        <h1 class="text-5xl font-extrabold text-gray-900 mb-2">
+            Global Time Zones
+        </h1>
+        <p class="text-xl text-gray-500">Live Clocks around the World</p>
+    </header>
+
+    <main id="time-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 max-w-7xl mx-auto">
+        <!-- Time cards will be inserted here by JavaScript -->
+    </main>
+
+    <script>
+        // Data for the cities
+        const timeZones = [
+            { id: 'tokyo', city: 'Tokyo', zone: 'Asia/Tokyo', country: 'Japan', continent: 'Asia' },
+            { id: 'beijing', city: 'Beijing', zone: 'Asia/Shanghai', country: 'China', continent: 'Asia' },
+            { id: 'ulaanbaatar', city: 'Ulaanbaatar', zone: 'Asia/Ulaanbaatar', country: 'Mongolia', continent: 'Asia' },
+            { id: 'kuala-lumpur', city: 'Kuala Lumpur', zone: 'Asia/Kuala_Lumpur', country: 'Malaysia', continent: 'Asia' },
+            { id: 'singapore', city: 'Singapore', zone: 'Asia/Singapore', country: 'Singapore', continent: 'Asia' },
+            { id: 'kolkata', city: 'Delhi / Kolkata', zone: 'Asia/Kolkata', country: 'India', continent: 'Asia' },
+            { id: 'moscow', city: 'Moscow', zone: 'Europe/Moscow', country: 'Russia', continent: 'Europe' },
+            { id: 'cairo', city: 'Cairo', zone: 'Africa/Cairo', country: 'Egypt', continent: 'Africa' },
+            { id: 'nairobi', city: 'Nairobi', zone: 'Africa/Nairobi', country: 'Kenya', continent: 'Africa' },
+            { id: 'johannesburg', city: 'Johannesburg', zone: 'Africa/Johannesburg', country: 'South Africa', continent: 'Africa' },
+            { id: 'paris', city: 'Paris', zone: 'Europe/Paris', country: 'France', continent: 'Europe' },
+            { id: 'rome', city: 'Rome', zone: 'Europe/Rome', country: 'Italy', continent: 'Europe' },
+            { id: 'madrid', city: 'Madrid', zone: 'Europe/Madrid', country: 'Spain', continent: 'Europe' },
+            { id: 'london', city: 'London', zone: 'Europe/London', country: 'UK', continent: 'Europe' },
+            { id: 'rio', city: 'Rio de Janeiro', zone: 'America/Sao_Paulo', country: 'Brazil', continent: 'Americas' },
+            { id: 'buenos-aires', city: 'Buenos Aires', zone: 'America/Argentina/Buenos_Aires', country: 'Argentina', continent: 'Americas' },
+            { id: 'chicago', city: 'Chicago', zone: 'America/Chicago', country: 'USA', continent: 'Americas' }, 
+            { id: 'new-york', city: 'New York', zone: 'America/New_York', country: 'USA', continent: 'Americas' },
+            { id: 'vancouver', city: 'Vancouver', zone: 'America/Vancouver', country: 'Canada', continent: 'Americas' },
+            { id: 'los-angeles', city: 'Los Angeles', zone: 'America/Los_Angeles', country: 'USA', continent: 'Americas' },
+            { id: 'honolulu', city: 'Honolulu', zone: 'Pacific/Honolulu', country: 'USA', continent: 'Oceania & Pacific' },
+            { id: 'guam', city: 'Guam', zone: 'Pacific/Guam', country: 'USA', continent: 'Oceania & Pacific' },
+            { id: 'sydney', city: 'Sydney', zone: 'Australia/Sydney', country: 'Australia', continent: 'Oceania & Pacific' },
+        ];
+
+        // --- Flag and Time Calculation Helper Functions ---
+
+        // Maps country names to ISO 3166-1 alpha-2 codes
+        function getCountryCode(country) {
+            const codes = {
+                'UK': 'GB', 'France': 'FR', 'Italy': 'IT', 'Spain': 'ES', 'Egypt': 'EG',
+                'Kenya': 'KE', 'South Africa': 'ZA', 'Russia': 'RU', 'Mongolia': 'MN',
+                'China': 'CN', 'Japan': 'JP', 'Malaysia': 'MY', 'Singapore': 'SG',
+                'Australia': 'AU', 'USA': 'US', 'Canada': 'CA', 'Brazil': 'BR',
+                'Argentina': 'AR', 'India': 'IN'
+            };
+            return codes[country] || '';
+        }
+
+        // Returns the CDN image URL for the flag (Updated to request 48x36 for better quality)
+        function getFlagImageUrl(countryCode) {
+            if (!countryCode) return '';
+            // Requesting 48x36 for better quality when scaled up on the card
+            return `https://flagcdn.com/48x36/${countryCode.toLowerCase()}.png`;
+        }
+
+        // Helper function to calculate the time difference from UTC in minutes for reliable sorting
+        function getOffsetMinutes(zone) {
+            try {
+                const now = new Date();
+                // Get UTC time in milliseconds
+                const utc = now.getTime() + (now.getTimezoneOffset() * 60000); 
+                
+                // Get the current time in the target zone
+                const localTimeInZone = new Date(now.toLocaleString('en-US', { timeZone: zone }));
+                const local = localTimeInZone.getTime();
+
+                return (local - utc) / 60000;
+            } catch (e) {
+                console.error(`Error calculating offset for ${zone}:`, e);
+                return 0; // Fallback
+            }
+        }
+
+        // Function to create the HTML element for a time card
+        function createTimeCard(zoneData) {
+            const countryCode = getCountryCode(zoneData.country);
+            const flagImageUrl = getFlagImageUrl(countryCode);
+
+            const card = document.createElement('div');
+            card.id = `card-${zoneData.id}`;
+            // Added 'relative' class to the card for the absolute positioning of the icon
+            card.className = 'time-card p-4 rounded-xl border border-blue-300/50 flex flex-col justify-between relative';
+            
+            const zoneDisplay = zoneData.zone.split('/')[1].replace(/_/g, ' ');
+
+            // Use the flag image with appropriate Tailwind classes
+            card.innerHTML = `
+                <!-- Top Right DST and Icon Container (Absolute Positioned) -->
+                <div class="absolute top-4 right-4 flex items-center gap-1 text-sm font-semibold text-gray-500 z-10">
+                    <span id="dst-indicator-${zoneData.id}" class="text-xs text-blue-600 font-extrabold hidden px-1 py-0.5 rounded-full bg-blue-100/70 border border-blue-300" title="Daylight Saving Time is Active">DST</span> 
+                    <span id="day-night-${zoneData.id}" class="text-5xl"></span> 
+                </div>
+
+                <div>
+                    <div class="city-header mb-1">
+                        <!-- Flag Image (Updated to w-10 for larger size) -->
+                        <img src="${flagImageUrl}" alt="${zoneData.country} Flag" 
+                            class="w-10 h-auto rounded shadow-md border border-gray-100" 
+                            onerror="this.style.display='none';"> 
+                            
+                        <!-- City name updated to text-2xl -->
+                        <h2 class="text-2xl font-bold text-gray-800">${zoneData.city}</h2>
+                    </div>
+                    <p class="text-xs text-gray-500 mb-2">${zoneData.country} (${zoneDisplay})</p>
+                </div>
+                <div class="text-right">
+                    <div id="time-${zoneData.id}" class="time-display">--:--:--</div>
+                    <div id="date-${zoneData.id}" class="date-display text-base">--/--/----</div>
+                </div>
+            `;
+            return card;
+        }
+
+        // Function to update the time and day/night icon for a specific zone
+        function updateTime(zoneData) {
+            const now = new Date();
+
+            // 1. Get Time/Date Strings
+            const timeOptions = { 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit', 
+                hour12: false, 
+                timeZone: zoneData.zone 
+            };
+            
+            const dateOptions = {
+                weekday: 'short',
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                timeZone: zoneData.zone
+            };
+
+            const timeString = new Intl.DateTimeFormat('en-US', timeOptions).format(now);
+            const dateString = new Intl.DateTimeFormat('en-US', dateOptions).format(now);
+
+            // 2. Determine Day/Night/Dawn/Dusk based on the current hour in the timezone
+            const hour = parseInt(new Intl.DateTimeFormat('en-US', { 
+                hour: 'numeric', 
+                hour12: false, 
+                timeZone: zoneData.zone 
+            }).format(now), 10);
+
+            let iconHTML = '';
+            
+            if (hour === 5) {
+                // Dawn: 5:00 AM to 5:59 AM
+                iconHTML = '<span class="text-orange-400" title="Dawn">🌅</span>';
+            } else if (hour >= 6 && hour < 18) {
+                // Day: 6:00 AM to 5:59 PM
+                iconHTML = '<span class="text-yellow-500" title="Daytime">☀️</span>';
+            } else if (hour === 18) {
+                // Dusk: 6:00 PM to 6:59 PM
+                iconHTML = '<span class="text-red-500" title="Dusk">🌇</span>';
+            } else {
+                // Night: 7:00 PM to 4:59 AM - Using City at Night symbol (🌃)
+                iconHTML = '<span class="text-indigo-700" title="City at Night">🌃</span>';
+            }
+
+            // 3. Determine DST status
+            // Check if the short timezone name contains "Daylight" or "Summer" 
+            // This is the simplest way in vanilla JS to detect DST for display purposes.
+            const longTimeZoneName = new Intl.DateTimeFormat('en-US', {
+                timeZone: zoneData.zone,
+                timeZoneName: 'long'
+            }).format(now);
+            
+            const isDST = longTimeZoneName.includes('Daylight') || longTimeZoneName.includes('Summer');
+
+            // 4. Update DOM elements
+            const timeElement = document.getElementById(`time-${zoneData.id}`);
+            const dateElement = document.getElementById(`date-${zoneData.id}`);
+            const dayNightElement = document.getElementById(`day-night-${zoneData.id}`);
+            const dstElement = document.getElementById(`dst-indicator-${zoneData.id}`);
+
+            if (timeElement) {
+                timeElement.textContent = timeString;
+            }
+            if (dateElement) {
+                dateElement.textContent = dateString;
+            }
+            if (dayNightElement) {
+                dayNightElement.innerHTML = iconHTML;
+            }
+            if (dstElement) {
+                // Toggle visibility of the DST badge
+                dstElement.classList.toggle('hidden', !isDST);
+            }
+        }
+
+        // Main initialization function
+        function initializeClocks() {
+            const grid = document.getElementById('time-grid');
+            grid.innerHTML = ''; // Clear the grid before rendering new content
+
+            // 1. Calculate offset and sort the entire list by time zone (East to West)
+            const sortedTimeZones = timeZones.map(zone => {
+                return {
+                    ...zone,
+                    offsetMinutes: getOffsetMinutes(zone.zone)
+                };
+            }).sort((a, b) => b.offsetMinutes - a.offsetMinutes); // Sort descending (Highest positive offset first)
+
+            // 2. Group by continent
+            const continentGroups = sortedTimeZones.reduce((acc, zone) => {
+                const continent = zone.continent;
+                if (!acc[continent]) {
+                    acc[continent] = [];
+                }
+                acc[continent].push(zone);
+                return acc;
+            }, {});
+
+            // 3. Define the desired display order of continents (optional, but ensures consistency)
+            const continentOrder = ['Oceania & Pacific', 'Asia', 'Europe', 'Africa', 'Americas'];
+
+            // 4. Render the grouped and sorted cities
+            continentOrder.forEach(continent => {
+                if (continentGroups[continent] && continentGroups[continent].length > 0) {
+                    // Create and append the continent header
+                    const header = document.createElement('h2');
+                    header.className = `col-span-full text-2xl font-extrabold mt-6 mb-3 pt-3 border-t-2 ${continent === 'Americas' ? 'border-blue-400' : 'border-blue-200'} text-gray-700`;
+                    header.textContent = continent.toUpperCase();
+                    grid.appendChild(header);
+
+                    // Add the time cards for each city in the continent
+                    continentGroups[continent].forEach(zone => {
+                        const card = createTimeCard(zone);
+                        grid.appendChild(card);
+                        // Initial update to show correct time immediately
+                        updateTime(zone);
+                    });
+                }
+            });
+
+            // 5. Set up interval for continuous updates
+            setInterval(() => {
+                // We update the original timeZones array since it holds the city IDs needed for the DOM
+                timeZones.forEach(zone => updateTime(zone));
+            }, 1000);
+        }
+
+        // Run the initialization when the window loads
+        window.onload = initializeClocks;
+    </script>
+</body>
+</html>

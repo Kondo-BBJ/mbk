@@ -116,7 +116,8 @@
                             <option value="corn">Corn (56 lbs/bu)</option>
                             <option value="wheat">Wheat (60 lbs/bu)</option>
                             <option value="soybeans">Soybeans (60 lbs/bu)</option>
-                            <option value="soybean_meal">Soybean Meal (100 lbs/bu)</option>
+                            <!-- ACCURATE CONVERSION: Soybean Meal is 47.53 lbs/bu (based on 2000 lbs / 42.08 bu) -->
+                            <option value="soybean_meal">Soybean Meal (47.53 lbs/bu)</option>
                             <option value="canola">Canola/Rapeseed (50 lbs/bu)</option>
                             <option value="barley">Barley (48 lbs/bu)</option>
                             <option value="sorghum">Sorghum/Milo (56 lbs/bu)</option>
@@ -298,21 +299,24 @@
 
     <script>
         // --- Grain Constants (Weight in lbs per Bushel) ---
+        // AMENDED: Soybean Meal is now set precisely to 47.53 lbs/bu (2000 lbs / 42.08 bu).
         const CONVERSION_RATES = {
             corn: 56,       // lbs per bushel
             wheat: 60,      // lbs per bushel
             soybeans: 60,    // lbs per bushel
-            soybean_meal: 100,
+            soybean_meal: 2000/42.08, // lbs per bushel (Updated for high accuracy)
             canola: 50,
             barley: 48,
             sorghum: 56
         };
 
-        // --- Futures Contract Constants (Units per 1 Contract) --- (RESTORED)
+        // --- Futures Contract Constants (Units per 1 Contract) ---
         const FUTURES_CONTRACTS = {
             corn: { unit: 'bu', size: 5000, exchange: 'CME', label: 'Corn (5,000 bu) Contracts:' },
             wheat: { unit: 'bu', size: 5000, exchange: 'CME', label: 'Wheat (5,000 bu) Contracts:' },
             soybeans: { unit: 'bu', size: 5000, exchange: 'CME', label: 'Soybean (5,000 bu) Contracts:' },
+            // Note: Soybean meal futures are based on Short Tons, not bushels, but this calculation
+            // uses the unit defined by the contract size. We use short_ton here.
             soybean_meal: { unit: 'short_ton', size: 100, exchange: 'CME', label: 'Soy Meal (100 sh.t) Contracts:' },
             canola: { unit: 'metric_ton', size: 20, exchange: 'ICE', label: 'Canola (20 MT) Contracts:' },
             barley: { unit: 'bu', size: 5000, exchange: 'CME', label: 'Barley (5,000 bu) Contracts:' },
@@ -377,7 +381,7 @@
         const resultValue = document.getElementById('result-value');
         const messageBox = document.getElementById('message-box');
 
-        // Futures Elements (RESTORED)
+        // Futures Elements
         const futuresResultRow = document.getElementById('futures-result-row');
         const resultFutures = document.getElementById('result-futures');
         const futuresLabel = document.getElementById('futures-label');
@@ -525,7 +529,7 @@
         }
 
         /**
-         * Calculates the total number of futures contracts based on the grain type and total mass/volume. (RESTORED)
+         * Calculates the total number of futures contracts based on the grain type and total mass/volume.
          */
         function calculateFuturesContracts(totalBushels, totalMetricTons, totalShortTons, grain) {
             const contract = FUTURES_CONTRACTS[grain];
@@ -655,7 +659,7 @@
             resultMetricTon.textContent = numberFormatter.format(totalMetricTons);
             resultBag60Kg.textContent = numberFormatter.format(totalBag60Kg);
 
-            // Futures Contracts Result (RESTORED LOGIC)
+            // Futures Contracts Result
             const totalFutures = calculateFuturesContracts(totalBushels, totalMetricTons, totalShortTons, grain);
             const futuresContractInfo = FUTURES_CONTRACTS[grain];
 

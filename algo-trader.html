@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AlgoTrader: Professional Multi-Asset Simulated Market (Margin)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght=300;600;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        /* Ensure the chart container has a fixed height */
+        #chart-container {
+             height: 300px;
+        }
+        
+        /* Style for the axis labels */
+        #price-axis {
+            color: #9ca3af;
+        }
+        .axis-label {
+            /* Ensures labels are aligned to the right */
+            text-align: right; 
+            padding-right: 4px;
+        }
+    </style>
+
+    <script>
+        // --- CONFIGURATION ---
+        const INITIAL_BANKROLL = 100000.00; 
+        const INITIAL_MARGIN_RATE = 0.05; // 5% Initial Margin of the gross contract value
+        
+        /**
+         * Rounds a floating point value to the nearest specified tick size.
+         * @param {number} value - The raw price value.
+         * @param {number} tick - The minimum price increment (e.g., 0.25, 0.01).
+         * @returns {number} The rounded value.
+         */
+        const roundToTick = (value, tick) => {
+            if (tick <= 0) return value;
+            // Use Math.round(x / y) * y logic to handle precision
+            const rounded = Math.round(value / tick) * tick;
+            // Fix potential floating point errors by rounding the final result to the correct decimal places
+            // We use toFixed(4) internally for calculations to maintain precision before presentation
+            const decimals = tick.toString().split('.')[1] ? tick.toString().split('.')[1].length : 0;
+            return parseFloat(rounded.toFixed(Math.max(4, decimals + 2))); 
+        };
+        
+        // --- Asset Definitions and State ---
+
+        // usdGrossValuePerContract is used for margin calculation for Forex contracts
+        // Commodity contracts use the standard multiplier/unitFactor calculation
+        const ASSETS = {
+            // --- FOREX CONTRACTS (JPY Quoted) ---
+            'USDJPY': { 
+                name: 'USD/JPY (FX)', 
+                startPrice: 150.00, 
+                volatility: 0.15, 
+                unit: 'JPY',
+                type: 'FOREX_JPY_QUOTE',
+                multiplier: 100000, // 100k USD base equivalent
+                usdGrossValuePerContract: 100000, 
+                tickSize: 0.01 
+            },
+            'AUDJPY': { 
+                name: 'AUD/JPY (FX)', 
+                startPrice: 98.00, 
+                volatility: 0.18, 
+                unit: 'JPY',
+                type: 'FOREX_JPY_QUOTE',
+                multiplier: 100000, // 100k AUD base equivalent
+                usdGrossValuePerContract: 65000, 
+                tickSize: 0.01
+            },
+            'CADJPY': { 
+                name: 'CAD/JPY (FX)', 
+                startPrice: 110.00, 
+                volatility: 0.12, 
+                unit: 'JPY',
+                type: 'FOREX_JPY_QUOTE',
+                multiplier: 100000, // 100k CAD base equivalent
+                usdGrossValuePerContract: 72000, 
+                tickSize: 0.01
+            },
+            
+            // --- ENERGY ---
+            'CL': { 
+                name: 'Crude Oil (CL)', 
+                startPrice: 80.00, 
+                volatility: 0.8, 
+                unit: 'USD/bbl',
+                multiplier: 1000, // 1,000 barrels per contract
+                unitFactor: 1, // Price is already in USD
+                tickSize: 0.01 // Standard $0.01 per barrel increment
+            },
+            
+            // --- SOFT COMMODITIES ---
+            'KC': { 
+                name: 'Arabica Coffee (KC)', 
+                startPrice: 200.00, 
+                volatility: 4.0, 
+                unit: 'USC/lb',
+                multiplier: 37500, // 37,500 pounds per contract
+                unitFactor: 0.01, // Price is in Cents, conversion factor to USD
+                tickSize: 0.05 // Standard 5 cent (USC) increment
+            },
+            'SB': { 
+                name: 'Sugar #11 (SB)', 
+                startPrice: 25.00, 
+                volatility: 0.5, 
+                unit: 'USC/lb',
+                multiplier: 112000, // 112,000 pounds per contract
+                unitFactor: 0.01, // Price is in Cents, conversion factor to USD
+                tickSize: 0.01
+            },
+
+            // --- AGRICULTURAL (Grains & Oils) ---
+            'CORN': { 
+                name: 'Corn (ZC)', 
+                startPrice: 450.00, 
+                volatility: 1.5, 
+                unit: 'USC/bu',
+                multiplier: 5000, // 5,000 bushels per contract
+                unitFactor: 0.01, 
+                tickSize: 0.25 // Standard 0.25 cent increment
+            },
+            'WHEAT': { 
+                name: 'Wheat (ZW)', 
+                startPrice: 580.00, 
+                volatility: 2.0, 
+                unit: 'USC/bu',
+                multiplier: 5000,
+                unitFactor: 0.01,
+                tickSize: 0.25 
+            },
+            'SOYBEANS': { 
+                name: 'Soybeans (ZS)', 
+                startPrice: 1200.00, 
+                volatility: 3.0, 
+                unit: 'USC/bu',
+                multiplier: 5000,
+                unitFactor: 0.01,
+                tickSize: 0.25 
+            },
+            'SOYMEAL': { 
+                name: 'Soybean Meal (ZM)', 
+                startPrice: 400.00, 
+                volatility: 2.5, 
+                unit: 'USD/st',
+                multiplier: 100, // 100 short tons per contract
+                unitFactor: 1, 
+                tickSize: 0.10 
+            },
+            'SOYOIL': { 
+                name: 'Soybean Oil (ZL)', 
+                startPrice: 45.00, 
+                volatility: 0.5, 
+                unit: 'USC/lb',
+                multiplier: 60000, // 60,000 lbs per contract
+                unitFactor: 0.01, 
+                tickSize: 0.01 
+            }
+        };
+        
+        // Trading State 
+        let gameState = {
+            bankroll: INITIAL_BANKROLL, 
+            positionSize: 0, 
+            avgEntryPrice: 0.00,
+            currentAssetId: 'USDJPY', 
+            lastUpdateTime: Date.now()
+        };
+
+        // Market Simulation State 
+        let currentPrice = ASSETS['USDJPY'].startPrice;
+        let priceHistory = [];
+        let priceHistoryLength = 50;
+        let momentum = 0.0;
+        let momentumTicks = 0;
+        let maxMomentumTicks = 30;
+
+        // --- UI Element References ---
+        let bankrollEl, equityEl, positionSizeEl, entryPriceEl, unrealizedPnLEl;
+        let priceEl, assetSelectorEl, unitLabelEl, requiredMarginEl, tickSizeEl;
+        let canvas, ctx;
+        let buyBtn, sellBtn, closeBtn, quantityInput, statusMessageEl, priceAxisEl;
+
+        // --- LOCAL STORAGE MANAGEMENT ---
+
+        const saveGameState = () => {
+            localStorage.setItem('traderGameState', JSON.stringify(gameState));
+            updateUI();
+        };
+
+        const loadGameState = () => {
+            const storedState = localStorage.getItem('traderGameState');
+            if (storedState) {
+                const loadedState = JSON.parse(storedState);
+                gameState = {
+                    ...gameState, 
+                    ...loadedState, 
+                };
+            } else {
+                gameState.bankroll = INITIAL_BANKROLL;
+            }
+            
+            // Initialize market simulation for the current asset
+            switchAsset(gameState.currentAssetId, false);
+        };
+
+        const resetGameState = () => {
+            gameState.bankroll = INITIAL_BANKROLL;
+            gameState.positionSize = 0;
+            gameState.avgEntryPrice = 0.00;
+            gameState.currentAssetId = 'USDJPY';
+            localStorage.removeItem('traderGameState');
+            switchAsset('USDJPY', false);
+            statusMessageEl.textContent = "Simulation completely reset. Starting fresh with USD/JPY.";
+        };
+        
+        // --- ASSET SWITCHING ---
+
+        const switchAsset = (assetId, resetPosition = true) => {
+            if (!ASSETS[assetId]) return;
+
+            // Realize PnL and close position if switching markets while holding a position
+            if (resetPosition && gameState.positionSize !== 0) {
+                 const currentAsset = ASSETS[gameState.currentAssetId];
+                 const realizedPnL = calculatePnL(currentPrice, gameState.avgEntryPrice, gameState.positionSize, currentAsset);
+                 
+                 // BANKROLL UPDATE ONLY ON CLOSE
+                 gameState.bankroll += realizedPnL;
+                 
+                 statusMessageEl.textContent = `Position of ${gameState.positionSize} contracts in ${currentAsset.name} closed before switching. Realized PnL: $${realizedPnL.toFixed(2)}.`;
+                 gameState.positionSize = 0;
+                 gameState.avgEntryPrice = 0.00;
+            } else if (resetPosition && assetId !== gameState.currentAssetId) {
+                 statusMessageEl.textContent = `Switched to ${ASSETS[assetId].name}.`;
+            }
+
+            gameState.currentAssetId = assetId;
+            const asset = ASSETS[assetId];
+            
+            // Reset market simulation state
+            currentPrice = asset.startPrice;
+            priceHistory = [{ price: currentPrice, timestamp: Date.now() }];
+            momentum = 0.0;
+            momentumTicks = 0;
+
+            // Update UI elements
+            assetSelectorEl.value = assetId;
+            unitLabelEl.textContent = asset.unit;
+            
+            // Determine price display precision
+            const priceDecimals = asset.tickSize.toString().includes('.') ? asset.tickSize.toString().split('.')[1].length : 0;
+            
+            // Format tick size for display
+            tickSizeEl.textContent = `${asset.tickSize.toFixed(priceDecimals)} ${asset.unit.split('/')[0]}`;
+
+            saveGameState();
+            updateUI();
+        };
+
+
+        // --- PRICE SIMULATION LOGIC ---
+
+        const generateNextPrice = () => {
+            const asset = ASSETS[gameState.currentAssetId];
+            const volatility = asset.volatility;
+            const tick = asset.tickSize; 
+
+            if (momentumTicks <= 0) {
+                momentum = (Math.random() < 0.5 ? -1 : 1) * (Math.random() * volatility * 0.2);
+                momentumTicks = Math.floor(Math.random() * maxMomentumTicks) + 10;
+            } else {
+                momentumTicks--;
+            }
+
+            const randomNoise = (Math.random() - 0.5) * volatility;
+
+            let rawPrice = currentPrice + randomNoise + momentum;
+            currentPrice = roundToTick(rawPrice, tick);
+            
+            if (currentPrice < tick) currentPrice = tick;
+
+            priceHistory.push({ price: currentPrice, timestamp: Date.now() });
+            while (priceHistory.length > priceHistoryLength) {
+                priceHistory.shift();
+            }
+        };
+
+        const gameLoop = () => {
+            generateNextPrice();
+            
+            if (priceHistory.length % 5 === 0) {
+                 saveGameState();
+            } else {
+                 updateUI(); 
+            }
+
+            setTimeout(gameLoop, 3000); 
+        };
+
+
+        // --- UTILITY: Calculate Gross Value, Margin, and PnL ---
+
+        /** Calculates the total gross USD value of a position in contracts. */
+        const calculateGrossValue = (price, quantity, asset) => {
+            if (asset.type && asset.type.startsWith('FOREX')) {
+                // Forex: Use the fixed Gross Contract Value (GCV) for margin purposes in a USD account
+                return asset.usdGrossValuePerContract * quantity;
+            } else {
+                // Commodity: GCV is calculated based on price: Price * Contracts * Units/Contract * $/Unit
+                return price * quantity * asset.multiplier * asset.unitFactor;
+            }
+        };
+
+        /** Calculates the required initial margin for a quantity of contracts. */
+        const calculateRequiredMargin = (price, quantity, asset) => {
+            return calculateGrossValue(price, quantity, asset) * INITIAL_MARGIN_RATE;
+        }
+
+        /** Calculates the unrealized PnL in USD. */
+        const calculatePnL = (currentPrice, entryPrice, positionSize, asset) => {
+             if (positionSize === 0) return 0;
+             
+             // Price difference in QUOTED UNITS
+             const priceDifference = currentPrice - entryPrice;
+             const absPositionSize = Math.abs(positionSize);
+             
+             if (asset.type === 'FOREX_JPY_QUOTE') {
+                 // JPY Quoted Forex PnL: (Exit Price - Entry Price) * Units/Contract * Contracts
+                 // PnL is in JPY, must convert to USD by dividing by the current rate.
+                 
+                 // PnL in JPY
+                 const pnlInQuoteCurrency = priceDifference * absPositionSize * asset.multiplier; 
+                 
+                 // Convert JPY PnL to USD PnL using the current rate (price)
+                 let pnl = pnlInQuoteCurrency / currentPrice; 
+                 
+                 // Reverse PnL sign for short positions
+                 if (positionSize < 0) {
+                      pnl = -pnl; 
+                 }
+                 
+                 return pnl;
+             }
+             
+             // Commodity PnL (Standard Calculation)
+             const pnlBase = priceDifference * absPositionSize * asset.multiplier * asset.unitFactor;
+             
+             if (positionSize > 0) {
+                 return pnlBase;
+             } else {
+                 return -pnlBase;
+             }
+        };
+
+
+        // --- TRADING ACTIONS ---
+
+        const executeTrade = (action) => {
+            const asset = ASSETS[gameState.currentAssetId];
+            const quantity = parseInt(quantityInput.value) || 1;
+            
+            if (quantity <= 0) {
+                statusMessageEl.textContent = "Enter a valid quantity (contracts).";
+                return;
+            }
+            
+            let newBankroll = gameState.bankroll;
+            let newPositionSize = gameState.positionSize;
+            let newAvgEntryPrice = gameState.avgEntryPrice;
+            
+            statusMessageEl.textContent = ""; 
+            
+            try {
+                if (action === 'BUY' || action === 'SELL') {
+                    
+                    // Proposed final position size (absolute value)
+                    const finalPositionSize = Math.abs(newPositionSize + (action === 'BUY' ? quantity : -quantity));
+                    const totalMarginAfterTrade = calculateRequiredMargin(currentPrice, finalPositionSize, asset);
+
+                    // Margin Check: available cash must cover the margin of the total intended position size
+                    if (gameState.bankroll < totalMarginAfterTrade) {
+                         throw new Error(`Insufficient margin. Need $${totalMarginAfterTrade.toFixed(2)} USD available in cash to cover total position margin.`);
+                    }
+
+                    // --- Open Position Logic (Bankroll is NOT modified) ---
+
+                    if (action === 'BUY') {
+                        // Calculate new average entry price
+                        const currentGrossValue = calculateGrossValue(newAvgEntryPrice, newPositionSize, asset); 
+                        const newGrossValue = calculateGrossValue(currentPrice, quantity, asset); 
+                        const newTotalSize = newPositionSize + quantity; 
+                        
+                        // New Average Entry Price calculation must handle both Forex and Commodities
+                        if (asset.type && asset.type.startsWith('FOREX')) {
+                             // Simplified Forex averaging (since margin is fixed, use weighted price average)
+                             newAvgEntryPrice = ((newAvgEntryPrice * Math.abs(newPositionSize)) + (currentPrice * quantity)) / newTotalSize;
+                        } else {
+                             // Commodity averaging (based on total GCV / total units)
+                             newAvgEntryPrice = (currentGrossValue + newGrossValue) / (newTotalSize * asset.multiplier * asset.unitFactor);
+                        }
+                        
+                        newPositionSize = newTotalSize;
+                        
+                        // Status message now uses toFixed(2)
+                        statusMessageEl.textContent = `Bought ${quantity} contracts of ${asset.name} at ${currentPrice.toFixed(2)}. New Margin Used: $${totalMarginAfterTrade.toFixed(2)}.`;
+
+                    } else if (action === 'SELL') {
+                        // This logic handles reduction of a long position, or opening/increasing a short position.
+                        const newTotalSize = newPositionSize - quantity;
+
+                        // Simple averaging logic for selling:
+                        if (Math.sign(newTotalSize) === Math.sign(newPositionSize) && newPositionSize !== 0) {
+                            // If the sign is the same (increasing short or reducing long without flipping)
+                            // Use the same weighted average logic as BUY.
+                            
+                            if (asset.type && asset.type.startsWith('FOREX')) {
+                                newAvgEntryPrice = ((newAvgEntryPrice * Math.abs(newPositionSize)) + (currentPrice * quantity)) / Math.abs(newTotalSize);
+                            } else {
+                                const currentGrossValue = calculateGrossValue(newAvgEntryPrice, newPositionSize, asset); 
+                                const newGrossValue = calculateGrossValue(currentPrice, quantity, asset); 
+                                newAvgEntryPrice = (currentGrossValue + newGrossValue) / (Math.abs(newTotalSize) * asset.multiplier * asset.unitFactor);
+                            }
+                        } else {
+                            // Position flipped or new short started: use current price as the entry price.
+                            newAvgEntryPrice = currentPrice;
+                        }
+
+                        newPositionSize = newTotalSize;
+                        
+                        // Status message now uses toFixed(2)
+                        statusMessageEl.textContent = `Sold ${quantity} contracts of ${asset.name} at ${currentPrice.toFixed(2)}. New Margin Used: $${totalMarginAfterTrade.toFixed(2)}.`;
+                    }
+                    
+                    newAvgEntryPrice = roundToTick(newAvgEntryPrice, asset.tickSize);
+
+                } else if (action === 'CLOSE') {
+                    if (newPositionSize === 0) {
+                        throw new Error("No open position to close.");
+                    }
+                    
+                    // 1. Calculate Realized PnL
+                    const realizedPnl = calculatePnL(currentPrice, newAvgEntryPrice, newPositionSize, asset);
+                    
+                    // 2. UPDATE BANKROLL with realized PnL (Margin Model Rule)
+                    newBankroll = gameState.bankroll + realizedPnl;
+                    
+                    // Reset position state
+                    newPositionSize = 0;
+                    newAvgEntryPrice = 0.00;
+                    
+                    const formattedPnL = (realizedPnl >= 0 ? '+' : '') + formatNumberWithCommas(realizedPnl.toFixed(2));
+
+                    statusMessageEl.textContent = `Position closed. Realized PnL: $${formattedPnL}. New Bankroll: $${formatNumberWithCommas(newBankroll.toFixed(2))}.`;
+                }
+                
+                // Update global state and save
+                gameState.bankroll = newBankroll;
+                gameState.positionSize = newPositionSize;
+                gameState.avgEntryPrice = newAvgEntryPrice;
+                saveGameState();
+
+            } catch (e) {
+                console.error("Trade failed:", e);
+                statusMessageEl.textContent = `Trade failed: ${e.message}`;
+            }
+        };
+
+        // --- UI RENDERING & UPDATES ---
+
+        /** Utility function to format a number with commas and two decimals. */
+        const formatNumberWithCommas = (n) => {
+            // Handle negative sign correctly
+            const sign = n < 0 ? '-' : '';
+            const absoluteN = Math.abs(n).toFixed(2);
+            // Add commas to the integer part
+            const parts = absoluteN.split('.');
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            return sign + parts.join('.');
+        };
+
+        const calculateCurrentPnL = () => {
+             return calculatePnL(currentPrice, gameState.avgEntryPrice, gameState.positionSize, ASSETS[gameState.currentAssetId]);
+        };
+
+        const calculateTotalRequiredMargin = () => {
+            if (gameState.positionSize === 0) return 0;
+            const asset = ASSETS[gameState.currentAssetId];
+            // Margin is calculated based on the entry price/GCV, not the current price, for stable requirement calculation.
+            return calculateRequiredMargin(gameState.avgEntryPrice, Math.abs(gameState.positionSize), asset);
+        };
+
+        const updateUI = () => {
+            const pnl = calculateCurrentPnL();
+            const equity = gameState.bankroll + pnl;
+            const totalRequiredMargin = calculateTotalRequiredMargin();
+            const asset = ASSETS[gameState.currentAssetId];
+
+            // Formatters
+            const formatCurrency = (n) => `$${formatNumberWithCommas(n)}`; 
+            const formatPrice = (n) => {
+                 // Determine price display precision
+                const priceDecimals = asset.tickSize.toString().includes('.') ? asset.tickSize.toString().split('.')[1].length : 0;
+                return n.toFixed(priceDecimals); 
+            }
+            const formatPnL = (n) => {
+                const color = n >= 0 ? 'text-green-400' : 'text-red-400';
+                // Apply $ symbol, sign, and commas
+                const formatted = formatNumberWithCommas(n);
+                // Remove the initial sign added by formatNumberWithCommas, and re-add a controlled sign with $
+                const baseValue = formatted.startsWith('-') ? formatted.substring(1) : formatted;
+                return `<span class="${color}">${n >= 0 ? '+$' : '-$'}${baseValue}</span>`;
+            };
+
+            if (!bankrollEl) return; 
+            
+            // Update Stats Panel
+            // Bankroll, Equity, and Required Margin use formatCurrency
+            bankrollEl.textContent = formatCurrency(gameState.bankroll);
+            equityEl.innerHTML = formatCurrency(equity);
+            positionSizeEl.textContent = gameState.positionSize;
+            
+            // Entry price uses the dynamic price formatter
+            entryPriceEl.textContent = formatPrice(gameState.avgEntryPrice);
+            
+            // Unrealized PnL uses the new formatPnL
+            unrealizedPnLEl.innerHTML = formatPnL(pnl);
+            
+            // Current price uses the dynamic price formatter
+            priceEl.textContent = formatPrice(currentPrice);
+            requiredMarginEl.textContent = formatCurrency(totalRequiredMargin);
+            
+            // Color the price based on movement
+            const lastPrice = priceHistory.length > 1 ? priceHistory[priceHistory.length - 2].price : currentPrice;
+            priceEl.classList.toggle('text-green-400', currentPrice > lastPrice);
+            priceEl.classList.toggle('text-red-400', currentPrice < lastPrice);
+            priceEl.classList.toggle('text-white', currentPrice === lastPrice);
+            
+            // Update Control States
+            const quantity = parseInt(quantityInput.value) || 1;
+            
+            // Calculate the TOTAL margin for the final position size (using current price for GCV)
+            const proposedPositionSize = Math.abs(gameState.positionSize) + quantity; // Simple worst-case calc
+            const totalMarginRequired = calculateRequiredMargin(currentPrice, proposedPositionSize, asset);
+
+            // Margin check: You need enough cash (Bankroll) to cover the total margin for the final position.
+            buyBtn.disabled = gameState.bankroll < totalMarginRequired; 
+            sellBtn.disabled = gameState.bankroll < totalMarginRequired;
+            
+            closeBtn.disabled = gameState.positionSize === 0;
+
+            renderChart();
+        };
+
+        const renderChart = () => {
+            if (priceHistory.length < 2 || !ctx) return;
+            
+            const asset = ASSETS[gameState.currentAssetId];
+            // Determine price display precision
+            const priceDecimals = asset.tickSize.toString().includes('.') ? asset.tickSize.toString().split('.')[1].length : 0;
+
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            ctx.clearRect(0, 0, width, height);
+
+            const prices = priceHistory.map(p => p.price);
+            let minPrice = Math.min(...prices) * 0.995;
+            let maxPrice = Math.max(...prices) * 1.005;
+            let priceRange = maxPrice - minPrice;
+            
+            if (priceRange === 0 || priceRange < 0.1) {
+                 maxPrice = minPrice + (priceRange < 0.1 ? 0.1 : 1);
+                 priceRange = maxPrice - minPrice;
+            }
+
+            // --- 1. Draw Grid Lines (Y-Axis) ---
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.beginPath();
+            const numGridLines = 4;
+            for (let i = 0; i <= numGridLines; i++) {
+                const y = height / numGridLines * i;
+                ctx.moveTo(0, y);
+                ctx.lineTo(width, y);
+            }
+            ctx.stroke();
+
+            // --- 2. Draw Price Line ---
+            ctx.beginPath();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#34d399'; 
+            
+            priceHistory.forEach((data, index) => {
+                const x = index / (priceHistoryLength - 1) * width;
+                const y = height - ((data.price - minPrice) / priceRange) * height;
+
+                if (index === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            ctx.stroke();
+
+            // --- 3. Draw Entry Price Line ---
+            if (gameState.positionSize !== 0) {
+                const entryY = height - ((gameState.avgEntryPrice - minPrice) / priceRange) * height;
+                ctx.setLineDash([5, 5]); // Dashed line
+                ctx.strokeStyle = '#facc15'; // Amber
+                ctx.beginPath();
+                ctx.moveTo(0, entryY);
+                ctx.lineTo(width, entryY);
+                ctx.stroke();
+                ctx.setLineDash([]); // Reset dash
+            }
+            
+            // --- 4. Draw Current Price Dot ---
+            const lastPriceData = priceHistory[priceHistory.length - 1];
+            const lastY = height - ((lastPriceData.price - minPrice) / priceRange) * height;
+            
+            const lastPrice = priceHistory.length > 1 ? priceHistory[priceHistory.length - 2].price : currentPrice;
+            ctx.fillStyle = currentPrice > lastPrice ? '#10b981' : '#ef4444'; 
+            
+            ctx.beginPath();
+            ctx.arc(width, lastY, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // --- 5. Draw Price Axis Labels (Y-Axis) ---
+            priceAxisEl.innerHTML = '';
+            
+            const numLabels = 5; 
+            const step = priceRange / (numLabels - 1);
+
+            for (let i = 0; i < numLabels; i++) {
+                const priceLabel = maxPrice - (step * i);
+                
+                const labelEl = document.createElement('div');
+                labelEl.className = 'axis-label';
+                
+                // Show dynamic decimal places for price display
+                labelEl.textContent = priceLabel.toFixed(priceDecimals); 
+                
+                priceAxisEl.appendChild(labelEl);
+            }
+        };
+
+        // --- Event Listeners and Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Assign references 
+            bankrollEl = document.getElementById('bankroll');
+            equityEl = document.getElementById('equity');
+            positionSizeEl = document.getElementById('position-size');
+            entryPriceEl = document.getElementById('entry-price');
+            unrealizedPnLEl = document.getElementById('unrealized-pnl');
+            priceEl = document.getElementById('current-price');
+            assetSelectorEl = document.getElementById('asset-selector');
+            unitLabelEl = document.getElementById('unit-label');
+            requiredMarginEl = document.getElementById('required-margin');
+            tickSizeEl = document.getElementById('tick-size');
+            canvas = document.getElementById('price-chart');
+            buyBtn = document.getElementById('buy-btn');
+            sellBtn = document.getElementById('sell-btn');
+            closeBtn = document.getElementById('close-btn');
+            quantityInput = document.getElementById('quantity-input');
+            statusMessageEl = document.getElementById('status-message');
+            priceAxisEl = document.getElementById('price-axis');
+            const resetBtn = document.getElementById('reset-btn');
+
+            if (canvas) {
+                ctx = canvas.getContext('2d');
+                // Set canvas size (requires the container to be rendered)
+                const chartContainer = document.getElementById('chart-container');
+                canvas.width = chartContainer.offsetWidth; 
+                canvas.height = chartContainer.offsetHeight;
+            } else {
+                 console.error("Canvas element not found!");
+                 return; 
+            }
+            
+            // Populate Asset Selector
+            Object.keys(ASSETS).forEach(id => {
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = ASSETS[id].name;
+                assetSelectorEl.appendChild(option);
+            });
+
+            // Event Listeners
+            buyBtn.addEventListener('click', () => executeTrade('BUY'));
+            sellBtn.addEventListener('click', () => executeTrade('SELL'));
+            closeBtn.addEventListener('click', () => executeTrade('CLOSE'));
+            resetBtn.addEventListener('click', () => resetGameState());
+            assetSelectorEl.addEventListener('change', (e) => switchAsset(e.target.value, true));
+
+            // Initial setup
+            loadGameState();
+            
+            quantityInput.value = 1;
+            statusMessageEl.textContent = `Market loaded: ${ASSETS[gameState.currentAssetId].name}. Trading on 5% Margin.`;
+
+            // Start the game loop
+            gameLoop();
+        });
+    </script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen p-4 flex justify-center items-center">
+    <div class="max-w-4xl w-full bg-gray-800 rounded-xl shadow-2xl p-6 space-y-6">
+        <header class="text-center border-b border-gray-700 pb-4">
+            <h1 class="text-4xl font-extrabold text-teal-400 tracking-tight font-serif">AlgoTrader <span class="text-xl font-light text-gray-400">v1.2 - Precision Margin Trading Simulator</span></h1>
+            <p class="text-sm text-gray-500 mt-1">Simulate margin trading with real-time PnL and risk tracking across multiple asset classes, including new Energy and Soft Commodities.</p>
+        </header>
+        
+        <!-- Asset Selector -->
+        <div class="flex flex-col sm:flex-row justify-between items-center bg-gray-700 p-4 rounded-lg shadow-md">
+            <div class="flex items-center space-x-3 w-full sm:w-1/2">
+                <label for="asset-selector" class="text-lg font-light text-gray-300">Market:</label>
+                <select id="asset-selector" class="flex-grow bg-gray-600 border border-gray-500 rounded-md p-2 text-white focus:outline-none focus:border-teal-400">
+                    <!-- Options populated by JS -->
+                </select>
+            </div>
+            
+            <!-- Current Price Ticker & Unit -->
+            <div class="flex items-center space-x-3 mt-3 sm:mt-0 sm:w-1/2 justify-end">
+                <span id="current-price" class="text-4xl font-extrabold text-white transition-colors duration-500">150.00</span>
+                <span id="unit-label" class="text-xl font-light text-gray-400">JPY</span>
+            </div>
+        </div>
+        
+        <!-- PnL & Equity Row -->
+         <div class="flex flex-col sm:flex-row justify-between items-center bg-gray-700 p-4 rounded-lg shadow-md">
+            <div class="text-center sm:text-left">
+                <span class="text-lg font-medium text-gray-300">Equity (Cash + PnL):</span>
+                <span id="equity" class="text-3xl font-bold text-green-400 block">$100,000.00</span>
+            </div>
+            <div class="text-center sm:text-right mt-3 sm:mt-0">
+                <span class="text-lg font-medium text-gray-300">Unrealized PnL:</span>
+                <!-- Updated PnL Display -->
+                <span id="unrealized-pnl" class="text-3xl font-bold text-green-400 block">+$0.00</span>
+            </div>
+        </div>
+        
+        <!-- Status Message -->
+        <div id="status-message" class="text-center text-sm font-semibold text-amber-400">
+            Initializing market data...
+        </div>
+
+        <!-- Chart Area: Container for Canvas and Price Axis -->
+        <div class="flex space-x-2">
+            <!-- Price Axis (Y-Axis) -->
+            <div id="price-axis" class="h-64 w-16 flex flex-col justify-between text-right text-xs pt-1 pb-4 pr-1">
+                <!-- Labels dynamically inserted here -->
+            </div>
+            <!-- Canvas Container -->
+            <div id="chart-container" class="flex-grow bg-gray-900 border border-gray-600 rounded-lg overflow-hidden relative">
+                <canvas id="price-chart" class="w-full h-full"></canvas>
+                <!-- Time Axis Overlay -->
+                <div class="absolute inset-0 flex items-end justify-between p-2 text-xs text-gray-400">
+                    <span>Oldest</span>
+                    <span>Latest</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Portfolio Stats & Trade Controls (Grid Layout) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <!-- Portfolio Stats -->
+            <div class="md:col-span-2 space-y-3">
+                <h2 class="text-2xl font-bold text-teal-400 border-b border-gray-700 pb-2">Portfolio Overview</h2>
+                <div class="grid grid-cols-2 gap-3 text-sm font-medium">
+                    <div class="bg-gray-700 p-3 rounded-lg flex justify-between">
+                        <span class="text-gray-400">Bankroll (Cash):</span>
+                        <span id="bankroll" class="text-white font-bold">$100,000.00</span>
+                    </div>
+                     <div class="bg-gray-700 p-3 rounded-lg flex justify-between">
+                        <span class="text-gray-400">Min. Tick Size:</span>
+                        <span id="tick-size" class="text-white font-bold">0.00 JPY</span>
+                    </div>
+                    <div class="bg-gray-700 p-3 rounded-lg flex justify-between">
+                        <span class="text-gray-400">Position Size (Contracts):</span>
+                        <span id="position-size" class="text-white font-bold">0</span>
+                    </div>
+                    <div class="bg-gray-700 p-3 rounded-lg flex justify-between">
+                        <span class="text-gray-400">Required Margin (Total):</span>
+                        <span id="required-margin" class="text-white font-bold">$0.00</span>
+                    </div>
+                    <div class="bg-gray-700 p-3 rounded-lg flex justify-between col-span-2">
+                        <span class="text-gray-400">Avg. Entry Price:</span>
+                        <span id="entry-price" class="text-white font-bold">0.00</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trade Controls -->
+            <div class="md:col-span-1 space-y-3">
+                <h2 class="text-2xl font-bold text-teal-400 border-b border-gray-700 pb-2">Trade Actions</h2>
+                
+                <!-- Quantity Input -->
+                <div class="flex items-center space-x-2 bg-gray-700 p-3 rounded-lg">
+                    <label for="quantity-input" class="text-gray-400 font-medium">Quantity (Contracts):</label>
+                    <input type="number" id="quantity-input" min="1" value="1" class="w-full bg-gray-600 border border-gray-500 rounded-md px-2 py-1 text-right text-white focus:outline-none focus:border-teal-400" />
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="space-y-2">
+                    <button id="buy-btn" class="w-full py-2 rounded-lg font-bold text-lg bg-green-600 hover:bg-green-500 transition duration-150 shadow-lg shadow-green-900/50 disabled:bg-gray-500 disabled:shadow-none">
+                        BUY (LONG)
+                    </button>
+                    <button id="sell-btn" class="w-full py-2 rounded-lg font-bold text-lg bg-red-600 hover:bg-red-500 transition duration-150 shadow-lg shadow-red-900/50 disabled:bg-gray-500 disabled:shadow-none">
+                        SELL (SHORT)
+                    </button>
+                    <button id="close-btn" class="w-full py-2 rounded-lg font-bold text-lg bg-amber-600 hover:bg-amber-500 transition duration-150 shadow-lg shadow-amber-900/50 disabled:bg-gray-500 disabled:shadow-none">
+                        CLOSE POSITION
+                    </button>
+                </div>
+                <button id="reset-btn" class="w-full py-1 text-sm rounded-lg font-medium text-gray-400 bg-gray-700 hover:bg-gray-600 transition duration-150 border border-gray-600">
+                    Reset All Data
+                </button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

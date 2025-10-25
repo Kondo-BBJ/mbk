@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Texas Hold'em vs. Computer</title>
+    <!-- Load Tailwind CSS for utility classes -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Roboto+Mono&display=swap" rel="stylesheet">
+    <style>
+        /* Custom Styles for Poker Table Aesthetics and Cards */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a1a1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .poker-table {
+            background-color: #0b492f; /* Deep Green Felt */
+            background-image: radial-gradient(#146c43 20%, #0b492f 80%);
+            border: 12px solid #5a3e1a; /* Wood edge */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border-radius: 50%; /* Oval/Circle effect */
+            width: 90vw;
+            max-width: 1000px;
+            height: 60vw;
+            max-height: 600px;
+            position: relative;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Card Styling */
+        .card-container {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            min-height: 100px;
+        }
+
+        .card {
+            width: 60px;
+            height: 90px;
+            background-color: white;
+            border-radius: 6px;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px;
+            font-family: 'Roboto Mono', monospace;
+            font-weight: 800;
+            transition: transform 0.5s ease-out;
+            transform-origin: bottom;
+            position: relative;
+        }
+
+        /* Back of the card */
+        .card.facedown {
+            background: linear-gradient(135deg, #e71d36 0%, #a40019 100%);
+            border: 2px solid white;
+            box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.5);
+            color: transparent !important;
+        }
+
+        /* Red suits */
+        .red-suit { color: #cc0000; }
+        /* Black suits */
+        .black-suit { color: #1e1e1e; }
+        
+        /* Rank and suit placement */
+        .rank-top { align-self: flex-start; }
+        .rank-bottom { align-self: flex-end; transform: rotate(180deg); }
+        .suit-center { font-size: 2.5rem; line-height: 1; margin-top: -5px; }
+
+        /* Action Buttons */
+        .action-button {
+            transition: background-color 0.15s, transform 0.1s, box-shadow 0.1s;
+            box-shadow: 0 4px #10b981; /* Tailwind emerald-600 */
+        }
+        .action-button:active {
+            box-shadow: 0 1px #10b981;
+            transform: translateY(3px);
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            .poker-table {
+                width: 98vw;
+                height: 60vh;
+                border-radius: 20px; /* More rectangular for mobile */
+                border-width: 8px;
+            }
+            .card {
+                width: 45px;
+                height: 65px;
+                font-size: 0.75rem;
+                padding: 2px;
+            }
+            .suit-center { font-size: 1.5rem; }
+            .rank-top, .rank-bottom { font-size: 0.7rem; }
+            .card-container { gap: 4px; }
+            .status-message { font-size: 1rem !important; }
+        }
+    </style>
+</head>
+<body> <!-- Removed onload="initGame()" -->
+
+    <div class="poker-table">
+        <!-- COMPUTER AREA (Top) -->
+        <div class="w-full flex flex-col items-center">
+            <div id="computer-stack" class="text-white text-lg font-bold mb-2 p-1 px-3 bg-gray-800 rounded-lg shadow-inner">Stack: $1000</div>
+            <div id="computer-cards" class="card-container">
+                <!-- Computer cards go here -->
+            </div>
+            <div id="computer-action" class="text-white text-sm mt-1"></div>
+        </div>
+
+        <!-- POT & COMMUNITY CARDS (Center) -->
+        <div class="flex flex-col items-center my-4">
+            <div id="pot-display" class="text-white text-2xl font-extrabold mb-4 p-2 px-6 bg-yellow-600 rounded-full shadow-xl transform hover:scale-105 transition-transform">POT: $0</div>
+            
+            <div id="community-cards" class="card-container">
+                <!-- Community cards (Flop, Turn, River) go here -->
+            </div>
+
+            <!-- Status Message -->
+            <div id="status-message" class="status-message text-xl font-bold mt-4 text-yellow-300 p-2 rounded-lg bg-black bg-opacity-30">Welcome to Texas Hold'em!</div>
+            <div id="hand-rank-display" class="text-white text-lg font-mono mt-1"></div>
+        </div>
+
+        <!-- PLAYER AREA (Bottom) -->
+        <div class="w-full flex flex-col items-center">
+            <div id="player-cards" class="card-container mb-4">
+                <!-- Player cards go here -->
+            </div>
+            <div id="player-stack" class="text-white text-lg font-bold mb-4 p-1 px-3 bg-gray-800 rounded-lg shadow-inner">Stack: $1000</div>
+            
+            <!-- ACTION CONTROLS -->
+            <div id="action-controls" class="flex flex-col items-center w-full max-w-md">
+                <div class="flex space-x-2 w-full justify-center mb-3">
+                    <input type="number" id="bet-amount" value="20" min="1" class="w-24 text-center p-2 rounded-lg text-gray-800 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-md">
+                    <button id="bet-button" onclick="handlePlayerAction('raise')" class="action-button bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-2 px-6 rounded-xl w-32" disabled>BET / RAISE</button>
+                </div>
+                <div class="flex space-x-4">
+                    <button id="fold-button" onclick="handlePlayerAction('fold')" class="action-button bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-6 rounded-xl" disabled>FOLD</button>
+                    <button id="call-button" onclick="handlePlayerAction('call')" class="action-button bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-6 rounded-xl w-32" disabled>CALL $0</button>
+                    <button id="check-button" onclick="handlePlayerAction('call')" class="action-button bg-gray-500 hover:bg-gray-400 text-white font-bold py-2 px-6 rounded-xl" disabled>CHECK</button>
+                </div>
+            </div>
+
+            <!-- GAME BUTTON -->
+            <button id="game-button" onclick="startGame()" class="mt-6 action-button bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold py-3 px-10 rounded-xl text-lg shadow-lg">DEAL NEW HAND</button>
+        </div>
+    </div>
+
+    <script>
+        // --- GLOBAL GAME STATE & CONSTANTS ---
+        const RANKS = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A'];
+        const SUITS = ['H', 'D', 'C', 'S']; // Hearts, Diamonds, Clubs, Spades
+        const SUIT_SYMBOLS = { 'H': '♥', 'D': '♦', 'C': '♣', 'S': '♠' };
+        const STARTING_STACK = 1000;
+        const BIG_BLIND = 20;
+        const SMALL_BLIND = 10;
+        const BET_MULTIPLIER = 2; // Computer's raise multiplier
+
+        // Changed 'let' to 'var' to prevent 'Identifier 'G' has already been declared' error
+        var G = {
+            playerStack: STARTING_STACK,
+            computerStack: STARTING_STACK,
+            pot: 0,
+            deck: [],
+            communityCards: [],
+            playerHand: [],
+            computerHand: [],
+            street: 'PRE_FLOP', // PRE_FLOP, FLOP, TURN, RIVER
+            bettingRound: {
+                currentBet: 0,
+                toCall: 0,
+                playerCommitted: 0,
+                computerCommitted: 0,
+                lastAction: null, // 'raise', 'call', 'check', 'fold'
+                activePlayer: 'PLAYER', // Dealer is always Computer for simplicity
+                isHeadsUp: true,
+                gameOver: false
+            }
+        };
+
+        // --- DOM REFERENCES ---
+        const DOM = {
+            potDisplay: document.getElementById('pot-display'),
+            playerStack: document.getElementById('player-stack'),
+            computerStack: document.getElementById('computer-stack'),
+            playerCards: document.getElementById('player-cards'),
+            computerCards: document.getElementById('computer-cards'),
+            communityCards: document.getElementById('community-cards'),
+            statusMessage: document.getElementById('status-message'),
+            handRankDisplay: document.getElementById('hand-rank-display'),
+            betAmountInput: document.getElementById('bet-amount'),
+            betButton: document.getElementById('bet-button'),
+            foldButton: document.getElementById('fold-button'),
+            callButton: document.getElementById('call-button'),
+            checkButton: document.getElementById('check-button'),
+            gameButton: document.getElementById('game-button'),
+            computerAction: document.getElementById('computer-action')
+        };
+
+        // --- CORE GAME MECHANICS: DECK & DEALING ---
+
+        /** Creates a new, unshuffled deck of 52 cards. */
+        function createDeck() {
+            let deck = [];
+            for (const rank of RANKS) {
+                for (const suit of SUITS) {
+                    deck.push({ rank, suit });
+                }
+            }
+            return deck;
+        }
+
+        /** Shuffles the deck using the Fisher-Yates algorithm. */
+        function shuffleDeck(deck) {
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+        }
+
+        /** Deals the next card from the deck. */
+        function dealCard() {
+            if (G.deck.length === 0) {
+                console.error("Deck is empty!");
+                return null;
+            }
+            return G.deck.pop();
+        }
+
+        // --- HAND EVALUATION (Simplified) ---
+
+        /** Converts a rank symbol (e.g., 'T', 'A') to a number (10, 14). */
+        function rankValue(rank) {
+            if (rank >= '2' && rank <= '9') return parseInt(rank);
+            if (rank === 'T') return 10;
+            if (rank === 'J') return 11;
+            if (rank === 'Q') return 12;
+            if (rank === 'K') return 13;
+            if (rank === 'A') return 14;
+            return 0;
+        }
+
+        /**
+         * Determines the best 5-card hand from a pool of up to 7 cards.
+         * Returns an object {rank: number, name: string}.
+         */
+        function evaluateHand(sevenCards) {
+            if (sevenCards.length < 5) return { rank: 0, name: 'No Hand' };
+
+            const cards = sevenCards.map(c => ({
+                rank: rankValue(c.rank),
+                suit: c.suit
+            })).sort((a, b) => b.rank - a.rank);
+
+            const counts = {};
+            cards.forEach(c => counts[c.rank] = (counts[c.rank] || 0) + 1);
+
+            const rankGroups = Object.entries(counts).map(([rank, count]) => ({ rank: parseInt(rank), count })).sort((a, b) => b.count - a.count || b.rank - a.rank);
+
+            const ranks = cards.map(c => c.rank);
+            const suits = cards.map(c => c.suit);
+            const uniqueRanks = [...new Set(ranks)];
+
+            // Helper function to check for straight (handles Ace low for 5-A)
+            const checkStraight = (arr) => {
+                if (arr.length < 5) return false;
+                const unique = [...new Set(arr)].sort((a, b) => b - a);
+
+                for (let i = 0; i <= unique.length - 5; i++) {
+                    // Normal straight
+                    if (unique[i] - unique[i + 4] === 4) return true;
+                }
+                // Check Ace-5 straight (A-5-4-3-2: 14, 5, 4, 3, 2)
+                if (unique.includes(14) && unique.includes(5) && unique.includes(4) && unique.includes(3) && unique.includes(2)) {
+                    return true;
+                }
+                return false;
+            };
+
+            // Helper function to check for flush
+            const checkFlush = (suits) => {
+                for (const suit of SUITS) {
+                    if (suits.filter(s => s === suit).length >= 5) return true;
+                }
+                return false;
+            };
+
+            const isFlush = checkFlush(suits);
+            const isStraight = checkStraight(ranks);
+
+            // 9. Straight Flush
+            if (isFlush && isStraight) return { rank: 9, name: 'Straight Flush' };
+
+            // 8. Four of a Kind
+            if (rankGroups[0] && rankGroups[0].count === 4) return { rank: 8, name: 'Four of a Kind' };
+
+            // 7. Full House
+            if (rankGroups[0] && rankGroups[0].count === 3 && rankGroups[1] && rankGroups[1].count >= 2) return { rank: 7, name: 'Full House' };
+
+            // 6. Flush
+            if (isFlush) return { rank: 6, name: 'Flush' };
+
+            // 5. Straight
+            if (isStraight) return { rank: 5, name: 'Straight' };
+
+            // 4. Three of a Kind
+            if (rankGroups[0] && rankGroups[0].count === 3) return { rank: 4, name: 'Three of a Kind' };
+
+            // 3. Two Pair
+            if (rankGroups[0] && rankGroups[0].count === 2 && rankGroups[1] && rankGroups[1].count === 2) return { rank: 3, name: 'Two Pair' };
+
+            // 2. Pair
+            if (rankGroups[0] && rankGroups[0].count === 2) return { rank: 2, name: 'Pair' };
+
+            // 1. High Card
+            return { rank: 1, name: `High Card (${RANKS[ranks[0] - 2]})` };
+        }
+
+        /**
+         * Compares two hands and determines the winner.
+         * Note: This simplified version only compares the primary hand rank (1-9).
+         * For a full game, detailed kicker and high card logic would be required.
+         */
+        function compareHands(playerAllCards, computerAllCards) {
+            const playerEval = evaluateHand(playerAllCards);
+            const computerEval = evaluateHand(computerAllCards);
+
+            if (playerEval.rank > computerEval.rank) return { winner: 'PLAYER', playerEval, computerEval };
+            if (computerEval.rank > playerEval.rank) return { winner: 'COMPUTER', playerEval, computerEval };
+
+            // Tie-breaker based on highest card *of the evaluated hand*. 
+            // This is a crude tie-breaker but is functional.
+            const pHigh = rankValue(playerAllCards[0].rank);
+            const cHigh = rankValue(computerAllCards[0].rank);
+
+            if (pHigh > cHigh) return { winner: 'PLAYER', playerEval, computerEval };
+            if (cHigh > pHigh) return { winner: 'COMPUTER', playerEval, computerEval };
+
+            return { winner: 'TIE', playerEval, computerEval }; // Split pot
+        }
+
+        // --- COMPUTER AI (Simple Strategy) ---
+
+        /** Determines the computer's action based on current hand strength. */
+        function handleComputerAction() {
+            const allCards = [...G.computerHand, ...G.communityCards];
+            const handStrength = evaluateHand(allCards);
+            let action = 'check'; // Default action
+
+            const currentBet = G.bettingRound.currentBet;
+            const toCall = G.bettingRound.toCall;
+
+            // Strength thresholds (simple mapping)
+            // 9-7: Very Strong (Straight Flush to Full House)
+            // 6-4: Medium Strong (Flush, Straight, Trips)
+            // 3-2: Weak (Two Pair, Pair)
+            // 1: Very Weak (High Card)
+
+            if (handStrength.rank >= 7) {
+                // Very Strong: Aggressive Raise
+                action = 'raise';
+            } else if (handStrength.rank >= 5) {
+                // Medium Strong: Call or Small Raise
+                action = (Math.random() < 0.3 && toCall > 0) ? 'raise' : 'call';
+            } else if (handStrength.rank >= 2) {
+                // Weak: Check or Call small bets
+                if (toCall === 0) {
+                    action = 'check';
+                } else if (toCall <= BIG_BLIND) {
+                    action = 'call';
+                } else {
+                    action = 'fold';
+                }
+            } else {
+                // Very Weak: Fold or Check
+                action = (toCall === 0) ? 'check' : 'fold';
+            }
+
+            // Execute the decided action after a short delay for visualization
+            setTimeout(() => {
+                if (action === 'fold') {
+                    DOM.computerAction.textContent = 'FOLD';
+                    endHand('PLAYER_FOLD');
+                } else if (action === 'check') {
+                    DOM.computerAction.textContent = 'CHECK';
+                    G.bettingRound.lastAction = 'check';
+                    G.bettingRound.activePlayer = 'PLAYER';
+                    updateUI();
+                } else if (action === 'call') {
+                    const amount = toCall;
+                    const result = executeBet('COMPUTER', amount);
+                    if (result) {
+                        DOM.computerAction.textContent = `CALL $${amount}`;
+                        G.bettingRound.lastAction = 'call';
+                        // Check if the betting round is over (no remaining action for player)
+                        if (G.bettingRound.toCall === 0 && G.bettingRound.currentBet > 0) {
+                             nextStreet();
+                        } else if (G.bettingRound.toCall === 0 && G.bettingRound.currentBet === 0 && G.street !== 'PRE_FLOP') {
+                            nextStreet();
+                        } else {
+                            G.bettingRound.activePlayer = 'PLAYER';
+                            updateUI();
+                        }
+                    }
+                } else if (action === 'raise') {
+                    const raiseAmount = Math.max(BIG_BLIND, currentBet * BET_MULTIPLIER);
+                    const amount = G.bettingRound.toCall + raiseAmount;
+                    const result = executeBet('COMPUTER', amount);
+                    if (result) {
+                        DOM.computerAction.textContent = `RAISE to $${G.bettingRound.currentBet}`;
+                        G.bettingRound.lastAction = 'raise';
+                        G.bettingRound.activePlayer = 'PLAYER';
+                        updateUI();
+                    }
+                }
+                
+                DOM.computerAction.classList.remove('opacity-0');
+                setTimeout(() => DOM.computerAction.classList.add('opacity-0'), 1500);
+
+            }, 800);
+        }
+
+
+        // --- UI & STATE UPDATES ---
+
+        /** Updates all text displays (stacks, pot, status). */
+        function updateUI() {
+            DOM.playerStack.textContent = `Stack: $${G.playerStack}`;
+            DOM.computerStack.textContent = `Stack: $${G.computerStack}`;
+            DOM.potDisplay.textContent = `POT: $${G.pot}`;
+
+            const toCall = G.bettingRound.toCall;
+
+            // Update Bet Input/Button
+            DOM.betAmountInput.value = Math.min(G.playerStack, toCall * 2 || BIG_BLIND * 2);
+            DOM.betButton.textContent = toCall > 0 ? `RAISE` : 'BET';
+
+            // Update Action Buttons
+            DOM.checkButton.disabled = G.bettingRound.activePlayer !== 'PLAYER' || toCall > 0;
+            DOM.checkButton.style.display = toCall === 0 ? 'inline-block' : 'none';
+
+            DOM.callButton.disabled = G.bettingRound.activePlayer !== 'PLAYER';
+            DOM.callButton.textContent = toCall > 0 ? `CALL $${toCall}` : 'CALL $0'; // Should not display CALL $0 if CHECK is available
+            DOM.callButton.style.display = toCall > 0 ? 'inline-block' : 'none';
+
+            DOM.betButton.disabled = G.bettingRound.activePlayer !== 'PLAYER';
+            DOM.foldButton.disabled = G.bettingRound.activePlayer !== 'PLAYER';
+            
+            // Hand rank display
+            if (G.communityCards.length >= 3 && G.playerHand.length === 2 && G.street !== 'SHOWDOWN') {
+                const playerAllCards = [...G.playerHand, ...G.communityCards];
+                const playerEval = evaluateHand(playerAllCards);
+                DOM.handRankDisplay.textContent = `Player Hand: ${playerEval.name}`;
+            } else {
+                DOM.handRankDisplay.textContent = '';
+            }
+            
+            // Status messages
+            if (G.bettingRound.gameOver) {
+                 DOM.statusMessage.textContent = G.bettingRound.message;
+                 G.bettingRound.activePlayer = null; // Block further betting
+            } else if (G.bettingRound.activePlayer === 'PLAYER') {
+                if (G.bettingRound.toCall > 0) {
+                    DOM.statusMessage.textContent = `Your turn. Computer bet $${G.bettingRound.currentBet}. Call $${toCall}, Fold, or Raise.`;
+                } else {
+                    DOM.statusMessage.textContent = `Your turn. Check or Bet.`;
+                }
+            } else if (G.bettingRound.activePlayer === 'COMPUTER') {
+                 DOM.statusMessage.textContent = 'Computer is thinking...';
+                 handleComputerAction();
+            } else {
+                DOM.statusMessage.textContent = '';
+            }
+
+            // Disable all actions if betting round is over and we are waiting for next street
+            if (G.bettingRound.lastAction === 'call' && G.bettingRound.toCall === 0 && G.street !== 'RIVER' && G.street !== 'SHOWDOWN') {
+                DOM.betButton.disabled = true;
+                DOM.foldButton.disabled = true;
+                DOM.callButton.disabled = true;
+                DOM.checkButton.disabled = true;
+                setTimeout(nextStreet, 1000);
+            }
+        }
+
+        /** Renders a card element to HTML. */
+        function renderCard(card, isFacedown = false) {
+            const suitSymbol = SUIT_SYMBOLS[card.suit];
+            const isRed = card.suit === 'H' || card.suit === 'D';
+            const suitClass = isRed ? 'red-suit' : 'black-suit';
+
+            if (isFacedown) {
+                return `<div class="card facedown"></div>`;
+            }
+
+            return `
+                <div class="card ${suitClass} transform translate-y-0">
+                    <div class="rank-top text-xs">${card.rank}</div>
+                    <div class="suit-center">${suitSymbol}</div>
+                    <div class="rank-bottom text-xs">${card.rank}</div>
+                </div>
+            `;
+        }
+
+        /** Renders all cards for the player, computer, and community. */
+        function renderCards() {
+            // Player Cards (Always face up)
+            DOM.playerCards.innerHTML = G.playerHand.map(card => renderCard(card)).join('');
+
+            // Computer Cards (Facedown until showdown)
+            DOM.computerCards.innerHTML = G.computerHand.map(card => renderCard(card, G.street !== 'SHOWDOWN')).join('');
+
+            // Community Cards
+            DOM.communityCards.innerHTML = G.communityCards.map(card => renderCard(card)).join('');
+        }
+
+        // --- GAME FLOW LOGIC ---
+
+        /** Initializes the game for a new hand. */
+        function initGame() {
+            G.deck = createDeck();
+            shuffleDeck(G.deck);
+
+            G.communityCards = [];
+            G.playerHand = [];
+            G.computerHand = [];
+            G.street = 'PRE_FLOP';
+            G.bettingRound = {
+                currentBet: 0,
+                toCall: 0,
+                playerCommitted: 0,
+                computerCommitted: 0,
+                lastAction: null,
+                activePlayer: 'PLAYER',
+                isHeadsUp: true,
+                gameOver: false,
+                message: ''
+            };
+            
+            DOM.computerAction.textContent = '';
+            DOM.gameButton.textContent = 'DEAL NEW HAND';
+            DOM.statusMessage.classList.remove('bg-red-500', 'bg-green-500');
+            DOM.statusMessage.classList.add('bg-black');
+            DOM.statusMessage.textContent = 'Click "Deal New Hand" to begin.';
+            
+            // Ensure action buttons are disabled before the hand starts
+            DOM.betButton.disabled = true;
+            DOM.foldButton.disabled = true;
+            DOM.callButton.disabled = true;
+            DOM.checkButton.disabled = true;
+
+            updateUI();
+            renderCards();
+        }
+
+        /** Starts the hand by dealing cards and posting blinds. */
+        function startGame() {
+            if (G.playerStack < BIG_BLIND || G.computerStack < BIG_BLIND) {
+                G.bettingRound.gameOver = true;
+                G.bettingRound.message = G.playerStack < BIG_BLIND ? "You don't have enough chips. Game Over!" : "Computer is out of chips. You Win!";
+                updateUI();
+                return;
+            }
+
+            initGame(); // Reset state
+
+            // Deal 2 cards to each player
+            G.playerHand.push(dealCard(), dealCard());
+            G.computerHand.push(dealCard(), dealCard());
+
+            // Post Blinds (Player is SB, Computer is BB for simplicity)
+            executeBet('PLAYER', SMALL_BLIND);
+            executeBet('COMPUTER', BIG_BLIND);
+            
+            // Set initial state after blinds
+            G.bettingRound.currentBet = BIG_BLIND;
+            G.bettingRound.toCall = BIG_BLIND - SMALL_BLIND; // Player must call BB minus their SB
+            G.bettingRound.activePlayer = 'PLAYER'; // Player acts first pre-flop
+
+            DOM.gameButton.textContent = 'In Progress...';
+            DOM.gameButton.disabled = true;
+            
+            renderCards();
+            updateUI();
+        }
+
+        /** Executes a bet or call from a player/computer. */
+        function executeBet(actor, amount) {
+            let actualAmount = Math.min(amount, actor === 'PLAYER' ? G.playerStack : G.computerStack);
+            
+            // Prevent betting less than toCall or minimum raise amount
+            if (actor === 'PLAYER') {
+                const minRaise = G.bettingRound.currentBet + G.bettingRound.currentBet;
+                const minBet = G.bettingRound.currentBet + BIG_BLIND; // Simplified min raise
+            }
+
+
+            const amountToCommit = actualAmount;
+
+            if (actor === 'PLAYER') {
+                G.playerStack -= amountToCommit;
+                G.bettingRound.playerCommitted += amountToCommit;
+            } else { // COMPUTER
+                G.computerStack -= amountToCommit;
+                G.bettingRound.computerCommitted += amountToCommit;
+            }
+
+            // Move the difference in commitment to the pot
+            const maxCommitted = Math.max(G.bettingRound.playerCommitted, G.bettingRound.computerCommitted);
+            const minCommitted = Math.min(G.bettingRound.playerCommitted, G.bettingRound.computerCommitted);
+
+            G.pot += amountToCommit; 
+
+            // Update betting round state
+            G.bettingRound.currentBet = maxCommitted;
+            G.bettingRound.toCall = maxCommitted - minCommitted;
+            
+            // This is a complex check, simplify it: the amount player must match
+            if (actor === 'PLAYER') {
+                G.bettingRound.toCall = G.bettingRound.computerCommitted - G.bettingRound.playerCommitted;
+            } else {
+                G.bettingRound.toCall = G.bettingRound.playerCommitted - G.bettingRound.computerCommitted;
+            }
+            
+            G.bettingRound.toCall = Math.max(0, G.bettingRound.toCall);
+            
+            return true;
+        }
+
+        /** Handles player's action (fold, call, raise). */
+        function handlePlayerAction(actionType) {
+            if (G.bettingRound.activePlayer !== 'PLAYER') return;
+            
+            const toCall = G.bettingRound.toCall;
+
+            if (actionType === 'fold') {
+                endHand('COMPUTER_FOLD');
+                return;
+            }
+
+            if (actionType === 'call') {
+                if (toCall === 0) {
+                    // Check action
+                    G.bettingRound.lastAction = 'check';
+                    // Move to next street immediately if check occurs
+                    if (G.bettingRound.lastAction === 'check' && G.street !== 'PRE_FLOP') {
+                        nextStreet();
+                        return;
+                    }
+                } else {
+                    // Call action
+                    executeBet('PLAYER', toCall);
+                    G.bettingRound.lastAction = 'call';
+                    // If player calls, and no more outstanding bets, round is over
+                    if (G.bettingRound.toCall === 0) {
+                        nextStreet();
+                        return;
+                    }
+                }
+            }
+            
+            if (actionType === 'raise') {
+                const betAmount = parseInt(DOM.betAmountInput.value);
+                const currentBet = G.bettingRound.currentBet;
+                
+                // Calculate the required total commit for the raise
+                let totalCommitmentRequired;
+                if (currentBet === 0) {
+                    // First bet of the round (total commitment is just the bet amount)
+                    totalCommitmentRequired = betAmount;
+                } else {
+                    // Raise must be at least the size of the last bet/raise
+                    // Or simplified: it must be a raise over the current highest committed.
+                    totalCommitmentRequired = G.bettingRound.playerCommitted + betAmount;
+                }
+                
+                const minRaiseAmount = G.bettingRound.currentBet + BIG_BLIND; // Minimum total bet for a raise (simplified)
+
+                if (totalCommitmentRequired > G.playerStack) {
+                    DOM.statusMessage.textContent = "You don't have enough chips for that bet.";
+                    return;
+                }
+                
+                if (totalCommitmentRequired < minRaiseAmount && G.bettingRound.currentBet > 0) {
+                    DOM.statusMessage.textContent = `Minimum raise is to $${minRaiseAmount}.`;
+                    return;
+                }
+                
+                // The amount to put in the pot is the difference between the total bet and what the player has already committed this round
+                const amountToPutIn = totalCommitmentRequired - G.bettingRound.playerCommitted;
+                
+                executeBet('PLAYER', amountToPutIn);
+
+                G.bettingRound.lastAction = 'raise';
+                G.bettingRound.activePlayer = 'COMPUTER';
+            }
+
+            // If action was not fold or round end, hand over to computer
+            if (G.bettingRound.activePlayer === 'PLAYER') {
+                 G.bettingRound.activePlayer = 'COMPUTER';
+            }
+            
+            updateUI();
+        }
+
+        /** Moves the game to the next street (Flop, Turn, River, Showdown). */
+        function nextStreet() {
+            // Reset betting round state for the new street
+            G.bettingRound.currentBet = 0;
+            G.bettingRound.toCall = 0;
+            G.bettingRound.playerCommitted = 0;
+            G.bettingRound.computerCommitted = 0;
+            G.bettingRound.lastAction = null;
+            G.bettingRound.activePlayer = 'PLAYER'; // Player acts first post-flop (SB position)
+            DOM.computerAction.textContent = ''; // Clear computer action message
+
+            if (G.street === 'PRE_FLOP') {
+                // Flop (3 cards)
+                G.communityCards.push(dealCard(), dealCard(), dealCard());
+                G.street = 'FLOP';
+                DOM.statusMessage.textContent = 'Flop is dealt! Player to act.';
+            } else if (G.street === 'FLOP') {
+                // Turn (1 card)
+                G.communityCards.push(dealCard());
+                G.street = 'TURN';
+                DOM.statusMessage.textContent = 'Turn is dealt! Player to act.';
+            } else if (G.street === 'TURN') {
+                // River (1 card)
+                G.communityCards.push(dealCard());
+                G.street = 'RIVER';
+                DOM.statusMessage.textContent = 'River is dealt! Player to act.';
+            } else if (G.street === 'RIVER') {
+                // Showdown
+                G.street = 'SHOWDOWN';
+                showdown();
+                return; 
+            }
+            
+            renderCards();
+            updateUI();
+        }
+
+        /** Concludes the hand, determining the winner and awarding the pot. */
+        function showdown() {
+            G.street = 'SHOWDOWN';
+            DOM.gameButton.disabled = false;
+            DOM.gameButton.textContent = 'PLAY AGAIN';
+            renderCards(); // Reveal computer's cards
+
+            const playerAllCards = [...G.playerHand, ...G.communityCards];
+            const computerAllCards = [...G.computerHand, ...G.communityCards];
+
+            const result = compareHands(playerAllCards, computerAllCards);
+            const winner = result.winner;
+            let message = '';
+            
+            if (winner === 'PLAYER') {
+                G.playerStack += G.pot;
+                message = `YOU WIN! Your ${result.playerEval.name} beats Computer's ${result.computerEval.name}. Pot of $${G.pot} awarded to you.`;
+                DOM.statusMessage.classList.add('bg-green-500');
+            } else if (winner === 'COMPUTER') {
+                G.computerStack += G.pot;
+                message = `Computer wins with a ${result.computerEval.name}. Your ${result.playerEval.name} loses.`;
+                DOM.statusMessage.classList.add('bg-red-500');
+            } else {
+                G.playerStack += G.pot / 2;
+                G.computerStack += G.pot / 2;
+                message = `It's a TIE (Chop Pot)! Both players had a ${result.playerEval.name}. Pot split.`;
+            }
+            
+            DOM.pot = 0;
+            G.bettingRound.gameOver = true;
+            G.bettingRound.message = message;
+            
+            updateUI();
+        }
+
+        /** Ends the hand prematurely due to a fold. */
+        function endHand(type) {
+            G.street = 'SHOWDOWN'; // Set to SHOWDOWN to reveal cards/end betting
+            DOM.gameButton.disabled = false;
+            DOM.gameButton.textContent = 'PLAY AGAIN';
+            
+            let message = '';
+            
+            if (type === 'COMPUTER_FOLD') {
+                G.playerStack += G.pot;
+                message = `Computer Folds! You win the pot of $${G.pot}.`;
+                DOM.statusMessage.classList.add('bg-green-500');
+            } else { // PLAYER_FOLD
+                G.computerStack += G.pot;
+                message = `You Folded! Computer wins the pot of $${G.pot}.`;
+                DOM.statusMessage.classList.add('bg-red-500');
+            }
+
+            G.pot = 0;
+            G.bettingRound.gameOver = true;
+            G.bettingRound.message = message;
+            
+            renderCards();
+            updateUI();
+        }
+
+        // --- INITIALIZATION ---
+        window.initGame = initGame;
+        window.startGame = startGame;
+        window.handlePlayerAction = handlePlayerAction;
+        
+        // Use window.onload to ensure initGame runs after the DOM is fully loaded and script is parsed.
+        window.onload = initGame;
+        
+    </script>
+</body>
+</html>

@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blackjack: Split Functionality Added</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --green-dark: #0f4c3e;
+            --green-light: #2c7764;
+            --red-poker: #cc3333;
+            --gold-light: #fbe587;
+            --card-bg: #fff;
+            --wood-dark: #5a3e1a;
+            --button-height: 48px;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a1a1a;
+            color: var(--gold-light);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        /* --- Round Table Styling --- */
+        .blackjack-table {
+            background-color: var(--green-dark); 
+            background-image: radial-gradient(circle at 50% 50%, #146c43 20%, #0b492f 80%);
+            border: 15px solid var(--wood-dark);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+            border-radius: 50%/35%;
+            width: 95vw;
+            max-width: 900px;
+            height: 90vh; /* Increased height for better hand spacing */
+            max-height: 800px; 
+            position: relative;
+            padding: 40px 20px 20px 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* --- Hand Container Styling --- */
+        .hand-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            border-radius: 12px;
+            transition: all 0.3s;
+            margin-bottom: 5px;
+        }
+        
+        /* Highlight the active hand for split play */
+        .hand-wrapper.active {
+            border: 3px solid var(--gold-light); 
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+        }
+
+        .cards-container {
+            display: flex;
+            justify-content: center;
+            min-height: 120px;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .player-hand-group {
+            display: flex;
+            justify-content: center;
+            gap: 20px; /* Space between split hands */
+            width: 100%;
+            flex-wrap: wrap;
+            min-height: 160px;
+        }
+
+        .hand-label {
+            font-size: 1.2rem;
+            font-weight: 700;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            align-items: center;
+            color: #fff;
+            text-shadow: 1px 1px 2px #000;
+            margin-bottom: 10px;
+        }
+
+        .score {
+            font-size: 1.5rem;
+            color: var(--gold-light);
+            background-color: rgba(0, 0, 0, 0.4);
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+        
+        .hand-bet {
+             font-size: 0.9rem;
+             color: var(--gold-light);
+             background-color: rgba(180, 0, 0, 0.5);
+             padding: 1px 5px;
+             border-radius: 4px;
+        }
+
+        /* -------------------------------------- */
+        /* --- CARD IMAGE CORRECTION STYLES --- */
+        /* -------------------------------------- */
+        .card {
+            width: 75px;
+            height: 110px;
+            background-color: var(--card-bg);
+            border: 1px solid #333;
+            border-radius: 8px;
+            box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.4);
+            position: relative;
+            padding: 5px;
+            font-weight: 900;
+            line-height: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            /* Ensure the text inside is not selectable */
+            user-select: none; 
+            -webkit-user-select: none;
+        }
+
+        .card.red { color: var(--red-poker); }
+        .card.black { color: #333; }
+        
+        /* Corner Rank and Suit */
+        .card-value {
+            position: absolute;
+            font-size: 1.2rem;
+            font-weight: 900;
+            padding: 0 2px;
+            line-height: 1.1;
+            text-align: center;
+        }
+        
+        .card-value.top {
+            top: 5px;
+            left: 5px;
+        }
+
+        .card-value.bottom {
+            bottom: 5px;
+            right: 5px;
+            transform: rotate(180deg); /* Invert bottom value */
+        }
+        
+        /* Central Suit Symbol */
+        .suit-center {
+            font-size: 3rem; /* Large suit in the middle */
+            opacity: 0.7;
+            align-self: center;
+            margin-top: 15px; /* Adjust centering */
+        }
+        
+        /* Card Back (Face Down) */
+        .card.face-down {
+            background-color: #337ab7; /* Blue poker back */
+            border: 3px solid var(--gold-light);
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+            /* Simple pattern using linear gradient */
+            background-image: 
+                repeating-linear-gradient(45deg, rgba(255,255,255,0.1) 0, rgba(255,255,255,0.1) 5px, transparent 5px, transparent 10px);
+            color: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0;
+            position: relative;
+        }
+        .card.face-down::before {
+             content: '';
+             position: absolute;
+             top: 10px;
+             bottom: 10px;
+             left: 10px;
+             right: 10px;
+             border: 2px solid #fff;
+             border-radius: 5px;
+        }
+        /* -------------------------------------- */
+
+
+        /* --- Status Message --- */
+        #status-message {
+            text-align: center;
+            font-size: 1.4rem;
+            font-weight: 900;
+            color: var(--gold-light);
+            text-shadow: 1px 1px 3px #000;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            margin-top: 10px;
+            min-height: 40px;
+        }
+
+
+        /* --- Controls Layout --- */
+        .controls-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+            max-width: 600px; 
+            margin-top: 20px;
+        }
+
+        .bankroll-row {
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #fff;
+        }
+        
+        /* Row 2: Bet and Deal (Equal Width & Height) */
+        .bet-deal-row {
+            display: flex;
+            justify-content: center;
+            align-items: stretch;
+            gap: 15px;
+        }
+        
+        .bet-control-group {
+            display: flex;
+            align-items: center;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
+            padding: 0 10px;
+            flex-grow: 1; 
+            height: var(--button-height);
+            max-width: calc(50% - 7.5px);
+        }
+        
+        .bet-label { color: var(--green-dark); font-weight: 700; white-space: nowrap; padding-right: 5px; }
+
+        #bet-input {
+            width: 100%; border: none; outline: none; text-align: right;
+            font-weight: bold; color: var(--green-dark); background-color: transparent; padding: 0;
+        }
+
+        /* Row 3: Action Buttons (Equal Width) */
+        .action-buttons-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        
+        .action-button {
+            background-color: var(--gold-light);
+            color: var(--green-dark);
+            border: none;
+            padding: 12px 10px;
+            font-size: 1.0rem;
+            font-weight: 700;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s, box-shadow 0.1s;
+            box-shadow: 0 4px #d99a00;
+            height: var(--button-height);
+        }
+
+        .deal-button {
+            flex-grow: 1; 
+            max-width: calc(50% - 7.5px);
+        }
+        
+        /* Class for Hit/Stand/Double/Split to enforce equal width */
+        .game-action-btn {
+            flex-grow: 1; 
+            max-width: calc(25% - 7.5px); 
+        }
+
+
+        .action-button:hover:not(:disabled) {
+            background-color: #ffda6a;
+            transform: translateY(-1px);
+        }
+
+        .action-button:active:not(:disabled) {
+            transform: translateY(3px);
+            box-shadow: 0 1px #d99a00;
+        }
+
+        .action-button.disabled, .action-button:disabled {
+            background-color: #ccc;
+            color: #666;
+            cursor: not-allowed;
+            box-shadow: 0 4px #aaa;
+            opacity: 0.7;
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 600px) {
+            .blackjack-table {
+                padding: 20px 10px;
+                height: auto;
+                max-height: none;
+            }
+            .controls-container {
+                max-width: 100%;
+            }
+            .bet-deal-row, .action-buttons-row {
+                gap: 5px;
+            }
+            .action-button {
+                padding: 10px 5px;
+                font-size: 0.8rem;
+            }
+            .bet-control-group, .deal-button {
+                 max-width: calc(50% - 2.5px);
+            }
+            .game-action-btn {
+                 max-width: calc(25% - 3.75px);
+            }
+            .player-hand-group {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="blackjack-table">
+        
+        <!-- Dealer Zone -->
+        <div class="dealer-zone w-full">
+            <div class="hand-label">
+                <span>Dealer's Hand</span>
+                Score: <span id="dealer-score" class="score">0</span>
+            </div>
+            <div id="dealer-cards" class="cards-container">
+                <!-- Dealer cards will be rendered here -->
+            </div>
+        </div>
+
+        <!-- Status Message -->
+        <div id="status-message">Place your bet and click Deal!</div>
+
+        <!-- Player Zone -->
+        <div class="player-zone w-full">
+            <!-- Container for all player hands (split hands) -->
+            <div id="player-hand-group" class="player-hand-group">
+                <!-- Individual player hand components will be rendered here -->
+            </div>
+            <div class="hand-label mt-4">
+                <span>Total Bankroll: $<span id="bankroll">1000</span></span>
+            </div>
+        </div>
+
+        <!-- Controls Container (Three-Row Layout) -->
+        <div class="controls-container">
+            <!-- Row 2: Bet Input and DEAL Button (Equal Width) -->
+            <div class="bet-deal-row">
+                <div class="bet-control-group">
+                    <label for="bet-input" class="bet-label">Bet: $</label>
+                    <input type="number" id="bet-input" value="10" min="1" max="1000" />
+                </div>
+                <button id="deal-btn" class="action-button deal-button">DEAL</button>
+            </div>
+
+            <!-- Row 3: Action Buttons (Equal Width) -->
+            <div class="action-buttons-row">
+                <button id="hit-btn" disabled class="action-button game-action-btn disabled">HIT</button>
+                <button id="stand-btn" disabled class="action-button game-action-btn disabled">STAND</button>
+                <button id="double-btn" disabled class="action-button game-action-btn disabled">DOUBLE</button>
+                <button id="split-btn" disabled class="action-button game-action-btn disabled">SPLIT</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Game State (Using LocalStorage for Persistence) ---
+        const DEFAULT_BANKROLL = 1000;
+        let bankroll = DEFAULT_BANKROLL;
+        let initialBet = 10; 
+        let deck = [];
+        let dealerHand = [];
+        let gameActive = false;
+        let isDealing = false;
+        
+        // Multi-Hand State: Array of hand objects { cards: [], bet: 0, status: 'playing' }
+        let playerHands = [];
+        let currentHandIndex = 0; // Index of the hand currently being played
+
+        // UI Element References
+        const dealerCardsEl = document.getElementById('dealer-cards');
+        const dealerScoreEl = document.getElementById('dealer-score'); // Correctly defined
+        const statusMessageEl = document.getElementById('status-message');
+        const bankrollEl = document.getElementById('bankroll');
+        const betInputEl = document.getElementById('bet-input');
+        const dealBtn = document.getElementById('deal-btn');
+        const hitBtn = document.getElementById('hit-btn');
+        const standBtn = document.getElementById('stand-btn');
+        const doubleBtn = document.getElementById('double-btn');
+        const splitBtn = document.getElementById('split-btn');
+        const playerHandGroupEl = document.getElementById('player-hand-group');
+
+        // --- Local Storage Management ---
+        const loadBankroll = () => {
+            const storedBankroll = localStorage.getItem('blackjackBankroll');
+            if (storedBankroll && !isNaN(parseInt(storedBankroll, 10))) {
+                bankroll = parseInt(storedBankroll, 10);
+            } else {
+                bankroll = DEFAULT_BANKROLL;
+                saveBankroll(bankroll);
+            }
+        };
+
+        const saveBankroll = (newBankroll) => {
+            bankroll = newBankroll;
+            localStorage.setItem('blackjackBankroll', bankroll);
+            bankrollEl.textContent = bankroll.toFixed(0);
+        };
+
+
+        // --- Core Game Logic ---
+
+        const suits = ['♠', '♥', '♦', '♣'];
+        const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+
+        const createDeck = () => {
+            deck = [];
+            for (let suit of suits) {
+                for (let value of values) {
+                    deck.push({ value, suit });
+                }
+            }
+        };
+
+        const shuffleDeck = () => {
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+        };
+
+        const dealCard = (hand) => {
+            if (deck.length === 0) {
+                createDeck();
+                shuffleDeck();
+            }
+            const card = deck.pop();
+            hand.push(card);
+            return card;
+        };
+        
+        const getCurrentHand = () => {
+            return playerHands[currentHandIndex];
+        };
+
+        const getHandValue = (hand) => {
+            let value = 0;
+            let aceCount = 0;
+            for (let card of hand) {
+                if (card.value === 'A') {
+                    aceCount++;
+                    value += 11;
+                } else if (['K', 'Q', 'J'].includes(card.value)) {
+                    value += 10;
+                } else {
+                    value += parseInt(card.value);
+                }
+            }
+            while (value > 21 && aceCount > 0) {
+                value -= 10;
+                aceCount--;
+            }
+            return value;
+        };
+        
+        const checkBust = () => {
+            const hand = getCurrentHand();
+            if (getHandValue(hand.cards) > 21) {
+                hand.status = 'busted';
+                statusMessageEl.textContent = `Hand ${currentHandIndex + 1} busts!`;
+                updateUI();
+                setTimeout(advanceHand, 1000);
+            }
+        }
+
+        const checkWinForAllHands = (dealerVal) => {
+            let totalWinLoss = 0;
+            let finalMessage = "Game Over. ";
+
+            playerHands.forEach((hand, index) => {
+                const playerVal = getHandValue(hand.cards);
+                let result = 0; // 0 for push, + for win, - for loss
+                let handMessage = `Hand ${index + 1} ($${hand.bet}): `;
+                
+                if (hand.status === 'busted') {
+                    result = -hand.bet;
+                    handMessage += "Bust (Loss)";
+                } else if (playerVal === 21 && hand.cards.length === 2 && dealerVal !== 21) {
+                    // Player Blackjack (1.5x)
+                    result = hand.bet * 1.5;
+                    handMessage += "Blackjack! (+$" + result.toFixed(0) + ")";
+                } else if (dealerVal > 21) {
+                    result = hand.bet;
+                    handMessage += "Dealer Busts (Win)";
+                } else if (playerVal > dealerVal) {
+                    result = hand.bet;
+                    handMessage += "Win (+$" + result.toFixed(0) + ")";
+                } else if (playerVal < dealerVal) {
+                    result = -hand.bet;
+                    handMessage += "Loss (-$" + hand.bet + ")";
+                } else {
+                    // Push
+                    result = 0; 
+                    handMessage += "Push (Bet returned)";
+                }
+
+                // Add original bet back in case of push or win
+                if (result >= 0) {
+                    totalWinLoss += hand.bet; // Return original bet
+                }
+                
+                totalWinLoss += result; // Add/subtract winnings/loss
+                finalMessage += handMessage + " | ";
+            });
+            
+            endGame(finalMessage, totalWinLoss);
+        };
+        
+        const startGame = () => {
+            if (isDealing) return;
+            isDealing = true;
+
+            initialBet = parseInt(betInputEl.value);
+            if (isNaN(initialBet) || initialBet <= 0 || initialBet > bankroll) {
+                statusMessageEl.textContent = `Please enter a valid bet between 1 and ${bankroll}.`;
+                isDealing = false;
+                return;
+            }
+
+            // Deduct initial bet
+            saveBankroll(bankroll - initialBet);
+
+            createDeck();
+            shuffleDeck();
+            dealerHand = [];
+            playerHands = [{ cards: [], bet: initialBet, status: 'playing' }];
+            currentHandIndex = 0;
+            gameActive = true;
+
+            // Deal initial cards
+            dealCard(playerHands[0].cards);
+            dealerHand.push({ card: dealCard([]), isFaceDown: true }); // Dealer first card face down
+            dealCard(playerHands[0].cards);
+            dealerHand.push({ card: dealCard([]), isFaceDown: false });
+
+            statusMessageEl.textContent = "Hit, Stand, Double, or Split?";
+
+            // Check for immediate Blackjack
+            if (getHandValue(playerHands[0].cards) === 21) {
+                dealerHand[0].isFaceDown = false; 
+                playerHands[0].status = 'stood'; // Auto stand on Blackjack
+                updateUI();
+                setTimeout(dealerPlay, 1000);
+            } else {
+                updateUI();
+                checkActionControls();
+            }
+            isDealing = false;
+        };
+
+        const hit = () => {
+            if (!gameActive) return;
+            const hand = getCurrentHand();
+            
+            // After any action (hit), double/split are disabled for the rest of this hand's play
+            checkActionControls(false, false); 
+            
+            dealCard(hand.cards);
+            updateUI();
+            checkBust();
+        };
+
+        const stand = () => {
+            if (!gameActive) return;
+            const hand = getCurrentHand();
+            
+            hand.status = 'stood';
+            statusMessageEl.textContent = `Hand ${currentHandIndex + 1} stands.`;
+            updateUI();
+            
+            setTimeout(advanceHand, 1000);
+        };
+        
+        const doubleDown = () => {
+            const hand = getCurrentHand();
+            if (!gameActive || hand.cards.length !== 2 || bankroll < hand.bet) return;
+
+            // 1. Deduct extra bet from bankroll & double the hand's bet
+            saveBankroll(bankroll - hand.bet);
+            hand.bet *= 2; 
+
+            statusMessageEl.textContent = `Hand ${currentHandIndex + 1} doubled down ($${hand.bet}). Dealing final card...`;
+
+            // 2. Deal exactly one card
+            dealCard(hand.cards);
+            hand.status = 'stood';
+            updateUI();
+
+            // 3. Check for bust or advance hand
+            if (getHandValue(hand.cards) > 21) {
+                hand.status = 'busted';
+                statusMessageEl.textContent = `Hand ${currentHandIndex + 1} busts (Doubled).`;
+                updateUI();
+            }
+            setTimeout(advanceHand, 1500);
+        };
+        
+        const split = () => {
+            const hand = getCurrentHand();
+            // Check for 2 cards, same value, and enough money
+            if (!gameActive || hand.cards.length !== 2 || hand.cards[0].value !== hand.cards[1].value || bankroll < hand.bet) return;
+
+            // 1. Create new hand object
+            const newHand = {
+                cards: [hand.cards.pop()], // Move the second card to the new hand
+                bet: hand.bet, // Bet is the same as original
+                status: 'playing'
+            };
+            playerHands.splice(currentHandIndex + 1, 0, newHand);
+
+            // 2. Deduct new bet
+            saveBankroll(bankroll - newHand.bet);
+            
+            // 3. Deal second card to both hands
+            dealCard(hand.cards); // Deal to current hand
+            dealCard(newHand.cards); // Deal to new hand
+
+            statusMessageEl.textContent = `Split! Playing Hand ${currentHandIndex + 1}.`;
+            updateUI();
+
+            // Disable split/double for the rest of this hand
+            checkActionControls(true, false, false); 
+        };
+        
+        const advanceHand = () => {
+            let nextIndex = currentHandIndex + 1;
+
+            while (nextIndex < playerHands.length) {
+                if (playerHands[nextIndex].status === 'playing') {
+                    currentHandIndex = nextIndex;
+                    statusMessageEl.textContent = `Now playing Hand ${currentHandIndex + 1}.`;
+                    updateUI();
+                    checkActionControls();
+                    return;
+                }
+                nextIndex++;
+            }
+            
+            // If loop finishes, all hands are played (stood/busted)
+            dealerPlay();
+        }
+
+        const dealerPlay = () => {
+            setControls(false); // Disable all action buttons
+            
+            // Reveal hidden card
+            if (dealerHand.length > 0) dealerHand[0].isFaceDown = false; 
+            updateUI();
+
+            let dealerVal = getHandValue(dealerHand.map(d => d.card));
+            statusMessageEl.textContent = "All player hands settled. Dealer plays...";
+
+            const playNext = () => {
+                if (dealerVal < 17) {
+                    dealerHand.push({ card: dealCard([]), isFaceDown: false });
+                    updateUI();
+                    dealerVal = getHandValue(dealerHand.map(d => d.card));
+                    setTimeout(playNext, 1000);
+                } else {
+                    checkWinForAllHands(dealerVal);
+                }
+            };
+            
+            // Start the delayed sequence
+            setTimeout(playNext, 1500); 
+        };
+
+
+        const endGame = (message, totalBetReturn) => {
+            gameActive = false;
+            setControls(false);
+
+            saveBankroll(bankroll + totalBetReturn); 
+            statusMessageEl.textContent = message + ` Final Bankroll Change: $${totalBetReturn.toFixed(0)}`;
+
+            setTimeout(() => {
+                // Reset controls for new game
+                dealBtn.disabled = false;
+                dealBtn.classList.remove('disabled');
+                betInputEl.value = initialBet;
+            }, 3000);
+        };
+
+
+        // --- UI Rendering ---
+
+        const setControls = (inGame, canDouble = false, canSplit = false) => {
+            hitBtn.disabled = !inGame;
+            standBtn.disabled = !inGame;
+            doubleBtn.disabled = !inGame || !canDouble;
+            splitBtn.disabled = !inGame || !canSplit;
+            dealBtn.disabled = inGame;
+            betInputEl.disabled = inGame;
+
+            hitBtn.classList.toggle('disabled', !inGame);
+            standBtn.classList.toggle('disabled', !inGame);
+            doubleBtn.classList.toggle('disabled', !inGame || !canDouble);
+            splitBtn.classList.toggle('disabled', !inGame || !canSplit);
+            dealBtn.classList.toggle('disabled', inGame);
+        };
+
+        const checkActionControls = (inGame = true, checkDouble = true, checkSplit = true) => {
+            if (!inGame || !gameActive) {
+                setControls(false);
+                return;
+            }
+
+            const hand = getCurrentHand();
+            const isInitialTurn = hand.cards.length === 2;
+            const canAfford = bankroll >= hand.bet;
+
+            let canDouble = false;
+            let canSplit = false;
+
+            if (isInitialTurn && checkDouble && canAfford) {
+                canDouble = true;
+            }
+
+            if (isInitialTurn && checkSplit && canAfford && hand.cards[0].value === hand.cards[1].value) {
+                canSplit = true;
+            }
+                             
+            setControls(true, canDouble, canSplit);
+        };
+
+
+        const getCardHTML = (card) => {
+            if (card.isFaceDown) {
+                return `<div class="card face-down"></div>`;
+            }
+            const color = (card.suit === '♥' || card.suit === '♦') ? 'red' : 'black';
+            return `
+                <div class="card ${color}">
+                    <div class="card-value top">${card.value}</div>
+                    <div class="suit-center">${card.suit}</div>
+                    <div class="card-value bottom">${card.value}</div>
+                </div>
+            `;
+        };
+
+        const renderDealerHand = () => {
+            dealerCardsEl.innerHTML = dealerHand.map(d => getCardHTML(d.card)).join('');
+            
+            const fullHand = dealerHand.map(d => d.card);
+            const fullValue = getHandValue(fullHand);
+            
+            // Score for dealer
+            if (gameActive && dealerHand.length > 0 && dealerHand[0].isFaceDown) {
+                const visibleHand = fullHand.slice(1);
+                dealerScoreEl.textContent = getHandValue(visibleHand);
+            } else {
+                dealerScoreEl.textContent = fullValue;
+            }
+        };
+
+        const renderPlayerHands = () => {
+            playerHandGroupEl.innerHTML = playerHands.map((hand, index) => {
+                const handValue = getHandValue(hand.cards);
+                const isActive = gameActive && hand.status === 'playing' && index === currentHandIndex;
+                const statusText = hand.status === 'busted' ? ' (Bust!)' : 
+                                   hand.status === 'stood' ? ' (Stood)' : 
+                                   '';
+
+                return `
+                    <div id="player-hand-${index}" class="hand-wrapper ${isActive ? 'active' : ''}">
+                        <div class="hand-label">
+                            Hand ${index + 1}
+                            <span class="score">${handValue}${statusText}</span>
+                            <span class="hand-bet">Bet: $${hand.bet}</span>
+                        </div>
+                        <div class="cards-container">
+                            ${hand.cards.map(card => getCardHTML(card)).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        };
+
+        const updateUI = () => {
+            // Update Bankroll and Bet Input
+            betInputEl.max = bankroll;
+            if (parseInt(betInputEl.value) > bankroll) {
+                 betInputEl.value = bankroll;
+            }
+            
+            // Update Hands
+            renderDealerHand();
+            renderPlayerHands();
+
+            // Ensure controls are set correctly
+            if (gameActive) {
+                checkActionControls();
+            } else {
+                setControls(false);
+                dealBtn.disabled = false;
+                dealBtn.classList.remove('disabled');
+            }
+        };
+
+        // --- Event Listeners and Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadBankroll(); 
+
+            betInputEl.addEventListener('input', () => {
+                let bet = parseInt(betInputEl.value);
+                if (isNaN(bet) || bet < 1) bet = 1;
+                if (bet > bankroll) bet = bankroll;
+                betInputEl.value = bet;
+                initialBet = bet;
+            });
+
+            dealBtn.addEventListener('click', startGame);
+            hitBtn.addEventListener('click', hit);
+            standBtn.addEventListener('click', stand);
+            doubleBtn.addEventListener('click', doubleDown);
+            splitBtn.addEventListener('click', split);
+
+            // Initial UI setup
+            statusMessageEl.textContent = "Place your bet and click Deal!";
+            updateUI();
+            setControls(false);
+            dealBtn.disabled = false;
+            dealBtn.classList.remove('disabled');
+        });
+    </script>
+</body>
+</html>

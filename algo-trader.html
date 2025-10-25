@@ -323,7 +323,7 @@
             return calculateGrossValue(price, quantity, asset) * INITIAL_MARGIN_RATE;
         }
 
-        /** Calculates the unrealized PnL in USD. */
+        /** Calculates the PnL in USD for a given size based on current vs. entry price. */
         const calculatePnL = (currentPrice, entryPrice, positionSize, asset) => {
              if (positionSize === 0) return 0;
              
@@ -371,91 +371,106 @@
                 return;
             }
             
-            let newBankroll = gameState.bankroll;
+            let newBankroll = gameState.bankroll; // Start with current bankroll
             let newPositionSize = gameState.positionSize;
             let newAvgEntryPrice = gameState.avgEntryPrice;
+            let realizedPnL = 0; // Tracks PnL realized in this trade
             
             statusMessageEl.textContent = ""; 
             
             try {
                 if (action === 'BUY' || action === 'SELL') {
                     
-                    // Proposed final position size (absolute value)
-                    const finalPositionSize = Math.abs(newPositionSize + (action === 'BUY' ? quantity : -quantity));
+                    const tradeSign = action === 'BUY' ? 1 : -1;
+                    const oldPositionSize = gameState.positionSize;
+                    const newTotalSize = oldPositionSize + (quantity * tradeSign);
+                    const finalPositionSize = Math.abs(newTotalSize);
+                    
+                    // --- Margin Check: Required margin for the FINAL absolute position size ---
                     const totalMarginAfterTrade = calculateRequiredMargin(currentPrice, finalPositionSize, asset);
 
-                    // Margin Check: available cash must cover the margin of the total intended position size
                     if (gameState.bankroll < totalMarginAfterTrade) {
                          throw new Error(`Insufficient margin. Need $${totalMarginAfterTrade.toFixed(2)} USD available in cash to cover total position margin.`);
                     }
 
-                    // --- Open Position Logic (Bankroll is NOT modified) ---
+                    // --- Realization Logic (Partial Close) ---
+                    const isPartialClose = (
+                        (oldPositionSize > 0 && newTotalSize >= 0 && newTotalSize < oldPositionSize) || // Selling part of a LONG (e.g., +5 -> +3)
+                        (oldPositionSize < 0 && newTotalSize <= 0 && newTotalSize > oldPositionSize)    // Buying part of a SHORT (e.g., -5 -> -3)
+                    );
+                    
+                    if (isPartialClose) {
+                        // FIX: When a partial close occurs, the number of contracts closed is exactly the quantity traded.
+                        const contractsClosed = quantity; 
+                        
+                        // PnL Size: This must be the size of the position being closed, using the original position's sign
+                        // to ensure the PnL calculation reflects the correct (Exit - Entry) relationship.
+                        const pnlSizeToRealize = Math.sign(oldPositionSize) * contractsClosed;
+                        
+                        // Calculate realized PnL on the closed portion
+                        realizedPnL = calculatePnL(currentPrice, gameState.avgEntryPrice, pnlSizeToRealize, asset);
+                        
+                        // Realize PnL into the bankroll
+                        newBankroll += realizedPnL;
+                        
+                        // Update status message with realization detail
+                        const formattedPnL = (realizedPnL >= 0 ? '+' : '') + formatNumberWithCommas(realizedPnL.toFixed(2));
+                        const side = oldPositionSize > 0 ? 'LONG' : 'SHORT';
+                        statusMessageEl.textContent = `Partial close (${side}). Realized PnL on ${contractsClosed} contracts: $${formattedPnL}. `;
+                    }
 
-                    if (action === 'BUY') {
-                        // BUY: Always a VWAP calculation since it is either starting a long position, 
-                        // increasing a long position, or reducing a short position.
-                        
-                        const currentGrossValue = calculateGrossValue(newAvgEntryPrice, Math.abs(newPositionSize), asset); 
-                        const newGrossValue = calculateGrossValue(currentPrice, quantity, asset); 
-                        const newTotalSize = newPositionSize + quantity; 
-                        
-                        // New Average Entry Price calculation (VWAP for adding to position)
-                        if (asset.type && asset.type.startsWith('FOREX')) {
-                             // Simplified Forex averaging (since margin is fixed, use weighted price average)
-                             newAvgEntryPrice = ((newAvgEntryPrice * Math.abs(newPositionSize)) + (currentPrice * quantity)) / Math.abs(newTotalSize);
-                        } else {
-                             // Commodity averaging (based on total GCV / total units)
-                             newAvgEntryPrice = (currentGrossValue + newGrossValue) / (Math.abs(newTotalSize) * asset.multiplier * asset.unitFactor);
-                        }
-                        
-                        newPositionSize = newTotalSize;
-                        
-                        // Status message now uses toFixed(2)
-                        statusMessageEl.textContent = `Bought ${quantity} contracts of ${asset.name} at ${currentPrice.toFixed(2)}. New Margin Used: $${totalMarginAfterTrade.toFixed(2)}.`;
-
-                    } else if (action === 'SELL') {
-                        // SELL: Handles reduction of long, opening/increasing short, or flipping long to short.
-                        
-                        const newTotalSize = newPositionSize - quantity;
-
-                        if (newPositionSize !== 0 && Math.sign(newTotalSize) === Math.sign(newPositionSize)) {
-                            // Case 1: Position is maintained (same side). Could be increasing short or reducing long.
-                            
-                            if (Math.abs(newTotalSize) > Math.abs(newPositionSize)) {
-                                // Magnitude INCREASES: Must be adding to a SHORT position. Apply VWAP.
-                                
-                                if (asset.type && asset.type.startsWith('FOREX')) {
-                                     // Simplified Forex VWAP
-                                     newAvgEntryPrice = ((newAvgEntryPrice * Math.abs(newPositionSize)) + (currentPrice * quantity)) / Math.abs(newTotalSize);
-                                } else { 
-                                     // Commodity VWAP
-                                     const currentGrossValue = calculateGrossValue(newAvgEntryPrice, Math.abs(newPositionSize), asset); 
-                                     const newGrossValue = calculateGrossValue(currentPrice, quantity, asset); 
-                                     newAvgEntryPrice = (currentGrossValue + newGrossValue) / (Math.abs(newTotalSize) * asset.multiplier * asset.unitFactor);
-                                }
-                                
-                            } else {
-                                // Magnitude DECREASES: Must be a PARTIAL CLOSE of a LONG position.
-                                // The average price of the remaining position MUST NOT CHANGE.
-                                // newAvgEntryPrice is already holding the old average, so we do nothing here.
-                            }
-                            
-                        } else {
-                            // Case 2: Position is closed, flipped, or a new short is opened.
-                            if (newTotalSize !== 0) { 
-                                // Position is not zero, so it's a flip or a new short start.
-                                newAvgEntryPrice = currentPrice;
-                            } else {
-                                // Position closed to zero, avg price resets on positionSize update.
-                            }
-                        }
-
-                        newPositionSize = newTotalSize;
-                        
-                        // Status message now uses toFixed(2)
-                        statusMessageEl.textContent = `Sold ${quantity} contracts of ${asset.name} at ${currentPrice.toFixed(2)}. New Margin Used: $${totalMarginAfterTrade.toFixed(2)}.`;
+                    // --- VWAP/New Position Logic ---
+                    
+                    let vwapNeeded = false;
+                    
+                    if (Math.sign(newTotalSize) !== Math.sign(oldPositionSize)) {
+                        // Case: Position flip or starting a new position from zero
+                        vwapNeeded = true;
+                    } else if (Math.abs(newTotalSize) > Math.abs(oldPositionSize)) {
+                        // Case: Increasing position size (adding to long or short)
+                        vwapNeeded = true;
                     }
                     
+                    if (vwapNeeded) {
+                        const contractsToVWAP = Math.abs(newTotalSize); 
+                        
+                        if (oldPositionSize === 0 || Math.abs(newTotalSize) !== contractsToVWAP) {
+                            // Starting a new position or flipping to opposite side (set new entry price)
+                            newAvgEntryPrice = currentPrice;
+                        } else {
+                            // Increasing position (VWAP)
+                            const currentGrossValue = calculateGrossValue(newAvgEntryPrice, Math.abs(oldPositionSize), asset); 
+                            const newGrossValue = calculateGrossValue(currentPrice, quantity, asset); 
+                            
+                            if (asset.type && asset.type.startsWith('FOREX')) {
+                                // Simplified Forex averaging (since margin is fixed, use weighted price average)
+                                newAvgEntryPrice = ((newAvgEntryPrice * Math.abs(oldPositionSize)) + (currentPrice * quantity)) / Math.abs(newTotalSize);
+                            } else {
+                                // Commodity averaging (based on total GCV / total units)
+                                const totalUnits = Math.abs(newTotalSize) * asset.multiplier * asset.unitFactor;
+                                newAvgEntryPrice = (currentGrossValue + newGrossValue) / totalUnits;
+                            }
+                        }
+                        
+                        // If a flip happened, the new entry price is the current price
+                        if (Math.sign(oldPositionSize) !== Math.sign(newTotalSize) && oldPositionSize !== 0) {
+                            newAvgEntryPrice = currentPrice;
+                        }
+                    }
+                    
+                    // Final position update
+                    newPositionSize = newTotalSize;
+                    
+                    // Append status message for the action executed
+                    let tradeActionMsg = statusMessageEl.textContent;
+                    if (action === 'BUY') {
+                         tradeActionMsg += `Bought ${quantity} contracts at ${currentPrice.toFixed(2)}.`;
+                    } else {
+                         tradeActionMsg += `Sold ${quantity} contracts at ${currentPrice.toFixed(2)}.`;
+                    }
+                    statusMessageEl.textContent = tradeActionMsg + ` New Margin Used: $${totalMarginAfterTrade.toFixed(2)}.`;
+
+
                     // Final safety rounding of the new average entry price
                     if (newAvgEntryPrice !== 0) {
                         newAvgEntryPrice = roundToTick(newAvgEntryPrice, asset.tickSize);
@@ -466,19 +481,19 @@
                         throw new Error("No open position to close.");
                     }
                     
-                    // 1. Calculate Realized PnL
-                    const realizedPnl = calculatePnL(currentPrice, newAvgEntryPrice, newPositionSize, asset);
+                    // 1. Calculate Realized PnL for the full closure
+                    realizedPnL = calculatePnL(currentPrice, newAvgEntryPrice, newPositionSize, asset);
                     
                     // 2. UPDATE BANKROLL with realized PnL (Margin Model Rule)
-                    newBankroll = gameState.bankroll + realizedPnl;
+                    newBankroll = gameState.bankroll + realizedPnL;
                     
                     // Reset position state
                     newPositionSize = 0;
                     newAvgEntryPrice = 0.00;
                     
-                    const formattedPnL = (realizedPnl >= 0 ? '+' : '') + formatNumberWithCommas(realizedPnl.toFixed(2));
+                    const formattedPnL = (realizedPnL >= 0 ? '+' : '') + formatNumberWithCommas(realizedPnL.toFixed(2));
 
-                    statusMessageEl.textContent = `Position closed. Realized PnL: $${formattedPnL}. New Bankroll: $${formatNumberWithCommas(newBankroll.toFixed(2))}.`;
+                    statusMessageEl.textContent = `Position fully closed. Realized PnL: $${formattedPnL}. New Bankroll: $${formatNumberWithCommas(newBankroll.toFixed(2))}.`;
                 }
                 
                 // Update global state and save
@@ -514,6 +529,7 @@
             if (gameState.positionSize === 0) return 0;
             const asset = ASSETS[gameState.currentAssetId];
             // Margin is calculated based on the entry price/GCV, not the current price, for stable requirement calculation.
+            // Using avgEntryPrice is safer for consistent margin tracking
             return calculateRequiredMargin(gameState.avgEntryPrice, Math.abs(gameState.positionSize), asset);
         };
 

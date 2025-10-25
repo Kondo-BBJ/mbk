@@ -392,18 +392,20 @@
                     // --- Open Position Logic (Bankroll is NOT modified) ---
 
                     if (action === 'BUY') {
-                        // Calculate new average entry price
-                        const currentGrossValue = calculateGrossValue(newAvgEntryPrice, newPositionSize, asset); 
+                        // BUY: Always a VWAP calculation since it is either starting a long position, 
+                        // increasing a long position, or reducing a short position.
+                        
+                        const currentGrossValue = calculateGrossValue(newAvgEntryPrice, Math.abs(newPositionSize), asset); 
                         const newGrossValue = calculateGrossValue(currentPrice, quantity, asset); 
                         const newTotalSize = newPositionSize + quantity; 
                         
-                        // New Average Entry Price calculation must handle both Forex and Commodities
+                        // New Average Entry Price calculation (VWAP for adding to position)
                         if (asset.type && asset.type.startsWith('FOREX')) {
                              // Simplified Forex averaging (since margin is fixed, use weighted price average)
-                             newAvgEntryPrice = ((newAvgEntryPrice * Math.abs(newPositionSize)) + (currentPrice * quantity)) / newTotalSize;
+                             newAvgEntryPrice = ((newAvgEntryPrice * Math.abs(newPositionSize)) + (currentPrice * quantity)) / Math.abs(newTotalSize);
                         } else {
                              // Commodity averaging (based on total GCV / total units)
-                             newAvgEntryPrice = (currentGrossValue + newGrossValue) / (newTotalSize * asset.multiplier * asset.unitFactor);
+                             newAvgEntryPrice = (currentGrossValue + newGrossValue) / (Math.abs(newTotalSize) * asset.multiplier * asset.unitFactor);
                         }
                         
                         newPositionSize = newTotalSize;
@@ -412,24 +414,40 @@
                         statusMessageEl.textContent = `Bought ${quantity} contracts of ${asset.name} at ${currentPrice.toFixed(2)}. New Margin Used: $${totalMarginAfterTrade.toFixed(2)}.`;
 
                     } else if (action === 'SELL') {
-                        // This logic handles reduction of a long position, or opening/increasing a short position.
+                        // SELL: Handles reduction of long, opening/increasing short, or flipping long to short.
+                        
                         const newTotalSize = newPositionSize - quantity;
 
-                        // Simple averaging logic for selling:
-                        if (Math.sign(newTotalSize) === Math.sign(newPositionSize) && newPositionSize !== 0) {
-                            // If the sign is the same (increasing short or reducing long without flipping)
-                            // Use the same weighted average logic as BUY.
+                        if (newPositionSize !== 0 && Math.sign(newTotalSize) === Math.sign(newPositionSize)) {
+                            // Case 1: Position is maintained (same side). Could be increasing short or reducing long.
                             
-                            if (asset.type && asset.type.startsWith('FOREX')) {
-                                newAvgEntryPrice = ((newAvgEntryPrice * Math.abs(newPositionSize)) + (currentPrice * quantity)) / Math.abs(newTotalSize);
+                            if (Math.abs(newTotalSize) > Math.abs(newPositionSize)) {
+                                // Magnitude INCREASES: Must be adding to a SHORT position. Apply VWAP.
+                                
+                                if (asset.type && asset.type.startsWith('FOREX')) {
+                                     // Simplified Forex VWAP
+                                     newAvgEntryPrice = ((newAvgEntryPrice * Math.abs(newPositionSize)) + (currentPrice * quantity)) / Math.abs(newTotalSize);
+                                } else { 
+                                     // Commodity VWAP
+                                     const currentGrossValue = calculateGrossValue(newAvgEntryPrice, Math.abs(newPositionSize), asset); 
+                                     const newGrossValue = calculateGrossValue(currentPrice, quantity, asset); 
+                                     newAvgEntryPrice = (currentGrossValue + newGrossValue) / (Math.abs(newTotalSize) * asset.multiplier * asset.unitFactor);
+                                }
+                                
                             } else {
-                                const currentGrossValue = calculateGrossValue(newAvgEntryPrice, newPositionSize, asset); 
-                                const newGrossValue = calculateGrossValue(currentPrice, quantity, asset); 
-                                newAvgEntryPrice = (currentGrossValue + newGrossValue) / (Math.abs(newTotalSize) * asset.multiplier * asset.unitFactor);
+                                // Magnitude DECREASES: Must be a PARTIAL CLOSE of a LONG position.
+                                // The average price of the remaining position MUST NOT CHANGE.
+                                // newAvgEntryPrice is already holding the old average, so we do nothing here.
                             }
+                            
                         } else {
-                            // Position flipped or new short started: use current price as the entry price.
-                            newAvgEntryPrice = currentPrice;
+                            // Case 2: Position is closed, flipped, or a new short is opened.
+                            if (newTotalSize !== 0) { 
+                                // Position is not zero, so it's a flip or a new short start.
+                                newAvgEntryPrice = currentPrice;
+                            } else {
+                                // Position closed to zero, avg price resets on positionSize update.
+                            }
                         }
 
                         newPositionSize = newTotalSize;
@@ -438,7 +456,10 @@
                         statusMessageEl.textContent = `Sold ${quantity} contracts of ${asset.name} at ${currentPrice.toFixed(2)}. New Margin Used: $${totalMarginAfterTrade.toFixed(2)}.`;
                     }
                     
-                    newAvgEntryPrice = roundToTick(newAvgEntryPrice, asset.tickSize);
+                    // Final safety rounding of the new average entry price
+                    if (newAvgEntryPrice !== 0) {
+                        newAvgEntryPrice = roundToTick(newAvgEntryPrice, asset.tickSize);
+                    }
 
                 } else if (action === 'CLOSE') {
                     if (newPositionSize === 0) {

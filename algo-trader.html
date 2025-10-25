@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AlgoTrader: Professional Multi-Asset Simulated Market (Margin)</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght=300;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;600;800&display=swap" rel="stylesheet">
     
     <style>
         body {
@@ -333,7 +333,7 @@
              
              if (asset.type === 'FOREX_JPY_QUOTE') {
                  // JPY Quoted Forex PnL: (Exit Price - Entry Price) * Units/Contract * Contracts
-                 // PnL is in JPY, must convert to USD by dividing by the current rate.
+                 // PnL is in JPY, must convert to USD by dividing by the current rate (price).
                  
                  // PnL in JPY
                  const pnlInQuoteCurrency = priceDifference * absPositionSize * asset.multiplier; 
@@ -709,11 +709,12 @@
         });
     </script>
 </head>
-<body class="bg-gray-900 text-white min-h-screen p-4 flex justify-center items-center">
+<body class="bg-gray-900 text-white min-h-screen p-4 flex flex-col justify-between items-center">
     <div class="max-w-4xl w-full bg-gray-800 rounded-xl shadow-2xl p-6 space-y-6">
         <header class="text-center border-b border-gray-700 pb-4">
-            <h1 class="text-4xl font-extrabold text-teal-400 tracking-tight font-serif">AlgoTrader <span class="text-xl font-light text-gray-400">v1.2 - Precision Margin Trading Simulator</span></h1>
-            <p class="text-sm text-gray-500 mt-1">Simulate margin trading with real-time PnL and risk tracking across multiple asset classes, including new Energy and Soft Commodities.</p>
+            <h1 class="text-4xl font-extrabold text-teal-400 tracking-tight font-serif">AlgoTrader <span class="text-xl font-light text-gray-400">v1.3 - Precision Margin Trading Simulator</span></h1>
+            <!-- Subtitle Updated -->
+            <p class="text-sm text-gray-500 mt-1">Simulate margin trading with real-time PnL and risk tracking across multiple asset classes.</p>
         </header>
         
         <!-- Asset Selector -->
@@ -825,5 +826,20 @@
             </div>
         </div>
     </div>
+    
+    <!-- Footer Section with Disclaimer and Trademark -->
+    <footer class="mt-8 p-4 w-full max-w-4xl text-center">
+        <div class="text-xs text-gray-400 space-y-2">
+            <!-- Updated Disclaimer -->
+            <p class="font-bold text-amber-500">Disclaimer</p>
+            <p>
+                This simulator is for <b>educational purposes only</b>. It does not reflect real market conditions, and any outcomes generated should not be considered financial advice. Please consult a qualified financial professional before making real-world investment decisions.
+            </p>
+            <!-- Updated Copyright -->
+            <p class="pt-2 text-gray-500">
+                &copy; 2025 BullBearJapan, Inc. All rights reserved.
+            </p>
+        </div>
+    </footer>
 </body>
 </html>

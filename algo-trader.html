@@ -10,21 +10,58 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
+            /* CRITICAL for full screen height: body must take full viewport height */
+            min-height: 100vh; 
         }
         
-        /* Ensure the chart container has a fixed height */
+        /* Responsive Layout Adjustments for full screen width/height */
+        .main-container {
+            width: 100%; 
+            padding: 0; 
+            max-width: 1200px; 
+            /* Added h-full to use all available vertical space */
+            height: 100%; 
+        }
+
+        /* Content Wrapper: Ensure it uses flex to manage vertical space for its children */
+        .content-wrapper {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1; /* Allows the wrapper to fill vertical space inside the main-container */
+            height: 100%; 
+            min-height: 0; /* Allows the flex-grow chart to shrink below its natural height if needed */
+        }
+        
+        /* Chart Area Container: Use flex-grow to make it consume available space */
+        .chart-area-row {
+            display: flex;
+            flex-grow: 1; /* Critical: This row will now expand vertically */
+            /* Lowered minimum height to allow controls to fit on shorter screens */
+            min-height: 250px; 
+            margin-bottom: 1rem; /* Reduced margin to save space */
+        }
+
+        /* Price Axis and Chart Container also need to flex-grow inside the row */
         #chart-container {
-             height: 300px;
+            flex-grow: 1;
         }
-        
-        /* Style for the axis labels */
+
+        /* Ensure content inside the main container doesn't get too wide on very large screens for readability */
+        @media (min-width: 1024px) {
+            .main-container {
+                max-width: 1200px; /* Max width for content area */
+            }
+        }
+
+        /* Style for the price axis container */
         #price-axis {
             color: #9ca3af;
         }
+        /* Style for the axis labels (now handled via absolute positioning in JS/Tailwind) */
         .axis-label {
-            /* Ensures labels are aligned to the right */
             text-align: right; 
-            padding-right: 4px;
+            width: 100%; /* Ensure label takes full width of the axis column */
+            line-height: 1; /* Prevent line height from affecting vertical position */
         }
     </style>
 
@@ -387,10 +424,11 @@
                     const finalPositionSize = Math.abs(newTotalSize);
                     
                     // --- Margin Check: Required margin for the FINAL absolute position size ---
+                    // Use currentPrice for margin check as it reflects the "cost" of the new/total position
                     const totalMarginAfterTrade = calculateRequiredMargin(currentPrice, finalPositionSize, asset);
 
                     if (gameState.bankroll < totalMarginAfterTrade) {
-                         throw new Error(`Insufficient margin. Need $${totalMarginAfterTrade.toFixed(2)} USD available in cash to cover total position margin.`);
+                         throw new Error(`Insufficient margin. Need $${formatNumberWithCommas(totalMarginAfterTrade.toFixed(2))} USD available in cash to cover total position margin.`);
                     }
 
                     // --- Realization Logic (Partial Close) ---
@@ -439,17 +477,8 @@
                             newAvgEntryPrice = currentPrice;
                         } else {
                             // Increasing position (VWAP)
-                            const currentGrossValue = calculateGrossValue(newAvgEntryPrice, Math.abs(oldPositionSize), asset); 
-                            const newGrossValue = calculateGrossValue(currentPrice, quantity, asset); 
-                            
-                            if (asset.type && asset.type.startsWith('FOREX')) {
-                                // Simplified Forex averaging (since margin is fixed, use weighted price average)
-                                newAvgEntryPrice = ((newAvgEntryPrice * Math.abs(oldPositionSize)) + (currentPrice * quantity)) / Math.abs(newTotalSize);
-                            } else {
-                                // Commodity averaging (based on total GCV / total units)
-                                const totalUnits = Math.abs(newTotalSize) * asset.multiplier * asset.unitFactor;
-                                newAvgEntryPrice = (currentGrossValue + newGrossValue) / totalUnits;
-                            }
+                            // We average the ENTRY PRICES, not the GCV, for margin/PnL calculation
+                            newAvgEntryPrice = ((newAvgEntryPrice * Math.abs(oldPositionSize)) + (currentPrice * quantity)) / Math.abs(newTotalSize);
                         }
                         
                         // If a flip happened, the new entry price is the current price
@@ -468,11 +497,13 @@
                     } else {
                          tradeActionMsg += `Sold ${quantity} contracts at ${currentPrice.toFixed(2)}.`;
                     }
-                    statusMessageEl.textContent = tradeActionMsg + ` New Margin Used: $${totalMarginAfterTrade.toFixed(2)}.`;
+                    statusMessageEl.textContent = tradeActionMsg + ` New Margin Used: $${formatNumberWithCommas(totalMarginAfterTrade.toFixed(2))}.`;
 
 
                     // Final safety rounding of the new average entry price
-                    if (newAvgEntryPrice !== 0) {
+                    if (newPositionSize === 0) {
+                        newAvgEntryPrice = 0; // Reset entry price if position is flat
+                    } else if (newAvgEntryPrice !== 0) {
                         newAvgEntryPrice = roundToTick(newAvgEntryPrice, asset.tickSize);
                     }
 
@@ -544,7 +575,8 @@
             const formatPrice = (n) => {
                  // Determine price display precision
                 const priceDecimals = asset.tickSize.toString().includes('.') ? asset.tickSize.toString().split('.')[1].length : 0;
-                return n.toFixed(priceDecimals); 
+                // Use max(2, priceDecimals) to ensure we always show at least 2 decimals (for USD, etc.)
+                return n.toFixed(Math.max(2, priceDecimals)); 
             }
             const formatPnL = (n) => {
                 const color = n >= 0 ? 'text-green-400' : 'text-red-400';
@@ -601,26 +633,57 @@
             const asset = ASSETS[gameState.currentAssetId];
             // Determine price display precision
             const priceDecimals = asset.tickSize.toString().includes('.') ? asset.tickSize.toString().split('.')[1].length : 0;
+            // Use max(2, priceDecimals) for display
+            const displayDecimals = Math.max(2, priceDecimals);
 
             const width = canvas.width;
             const height = canvas.height;
             
             ctx.clearRect(0, 0, width, height);
 
+            // --- Y-AXIS SCALE FIX ---
             const prices = priceHistory.map(p => p.price);
-            let minPrice = Math.min(...prices) * 0.995;
-            let maxPrice = Math.max(...prices) * 1.005;
+            
+            // Create a list of all relevant prices to scale against
+            const scalePrices = [...prices];
+            if (gameState.positionSize !== 0 && gameState.avgEntryPrice > 0) {
+                // Add the entry price to the list so the axis includes it
+                scalePrices.push(gameState.avgEntryPrice);
+            }
+
+            // Calculate min/max from this combined list
+            let minPrice = Math.min(...scalePrices);
+            let maxPrice = Math.max(...scalePrices);
+
+            // FIX 2: Increased buffer from 1% to 5% to prevent labels from being cut off.
+            const bufferPercentage = 0.05; 
+            let padding = (maxPrice - minPrice) * bufferPercentage; 
+            
+            if (padding === 0) {
+                 // If range is flat (all prices are the same), force a buffer based on tick size
+                 padding = asset.tickSize * 5; 
+            }
+            
+            minPrice -= padding;
+            maxPrice += padding;
+            
             let priceRange = maxPrice - minPrice;
             
-            if (priceRange === 0 || priceRange < 0.1) {
-                 maxPrice = minPrice + (priceRange < 0.1 ? 0.1 : 1);
+            // Ensure a minimum range if prices are flat, based on tick size
+            const minRange = asset.tickSize * 10; // e.g., 10 ticks
+            if (priceRange < minRange) {
+                 const midPoint = (maxPrice + minPrice) / 2;
+                 maxPrice = midPoint + (minRange / 2);
+                 minPrice = midPoint - (minRange / 2);
                  priceRange = maxPrice - minPrice;
             }
+            // --- END Y-AXIS FIX ---
+
 
             // --- 1. Draw Grid Lines (Y-Axis) ---
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
             ctx.beginPath();
-            const numGridLines = 4;
+            const numGridLines = 4; // 5 points/labels
             for (let i = 0; i <= numGridLines; i++) {
                 const y = height / numGridLines * i;
                 ctx.moveTo(0, y);
@@ -670,22 +733,53 @@
 
             // --- 5. Draw Price Axis Labels (Y-Axis) ---
             priceAxisEl.innerHTML = '';
-            
+            priceAxisEl.style.position = 'relative'; // Mandatory for absolute positioning of children
+
             const numLabels = 5; 
-            const step = priceRange / (numLabels - 1);
+            const priceStep = priceRange / (numLabels - 1);
 
             for (let i = 0; i < numLabels; i++) {
-                const priceLabel = maxPrice - (step * i);
+                // Label calculation is based on maxPrice, moving downwards
+                const priceLabelRaw = maxPrice - (priceStep * i);
+                const priceLabel = roundToTick(priceLabelRaw, asset.tickSize);
                 
+                // Calculate the corresponding Y position on the canvas (0 = top, height = bottom)
+                // The canvas is divided into 4 segments (0, 1, 2, 3, 4) for 5 lines
+                const y = height / (numLabels - 1) * i; 
+
                 const labelEl = document.createElement('div');
-                labelEl.className = 'axis-label';
+                // Use Tailwind classes for positioning: absolute, anchored to the right edge, padding, color
+                labelEl.className = 'axis-label absolute right-0 pr-1 text-gray-400';
+                
+                // Position the label element vertically centered on the line (y-50%)
+                labelEl.style.top = `${y}px`;
+                labelEl.style.transform = 'translateY(-50%)'; 
                 
                 // Show dynamic decimal places for price display
-                labelEl.textContent = priceLabel.toFixed(priceDecimals); 
+                const displayDecimals = Math.max(2, asset.tickSize.toString().includes('.') ? asset.tickSize.toString().split('.')[1].length : 0);
+                labelEl.textContent = priceLabel.toFixed(displayDecimals); 
                 
+                // Highlight the label if it's very close to the entry price
+                if (gameState.positionSize !== 0 && Math.abs(priceLabel - gameState.avgEntryPrice) < (priceStep * 0.1)) {
+                    labelEl.classList.add('text-amber-400', 'font-bold');
+                }
+
                 priceAxisEl.appendChild(labelEl);
             }
         };
+        
+        // This function resizes the canvas to match its container when the window size changes
+        const handleResize = () => {
+            if (canvas && document.getElementById('chart-container')) {
+                const chartContainer = document.getElementById('chart-container');
+                // The canvas width and height are set to the *current* size of the container,
+                // which is now dynamically sized by CSS/Tailwind flex properties.
+                canvas.width = chartContainer.offsetWidth; 
+                canvas.height = chartContainer.offsetHeight; 
+                renderChart();
+            }
+        };
+
 
         // --- Event Listeners and Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
@@ -711,15 +805,17 @@
 
             if (canvas) {
                 ctx = canvas.getContext('2d');
-                // Set canvas size (requires the container to be rendered)
-                const chartContainer = document.getElementById('chart-container');
-                canvas.width = chartContainer.offsetWidth; 
-                canvas.height = chartContainer.offsetHeight;
+                // Initial canvas size
+                handleResize(); 
             } else {
                  console.error("Canvas element not found!");
                  return; 
             }
             
+            // Attach resize listener to ensure responsiveness
+            window.addEventListener('resize', handleResize);
+
+
             // Populate Asset Selector
             Object.keys(ASSETS).forEach(id => {
                 const option = document.createElement('option');
@@ -746,133 +842,139 @@
         });
     </script>
 </head>
-<body class="bg-gray-900 text-white min-h-screen p-4 flex flex-col justify-between items-center">
-    <div class="max-w-4xl w-full bg-gray-800 rounded-xl shadow-2xl p-6 space-y-6">
-        <header class="text-center border-b border-gray-700 pb-4">
-            <h1 class="text-4xl font-extrabold text-teal-400 tracking-tight font-serif">AlgoTrader <span class="text-xl font-light text-gray-400">v1.3 - Precision Margin Trading Simulator</span></h1>
-            <!-- Subtitle Updated -->
-            <p class="text-sm text-gray-500 mt-1">Simulate margin trading with real-time PnL and risk tracking across multiple asset classes.</p>
-        </header>
-        
-        <!-- Asset Selector -->
-        <div class="flex flex-col sm:flex-row justify-between items-center bg-gray-700 p-4 rounded-lg shadow-md">
-            <div class="flex items-center space-x-3 w-full sm:w-1/2">
-                <label for="asset-selector" class="text-lg font-light text-gray-300">Market:</label>
-                <select id="asset-selector" class="flex-grow bg-gray-600 border border-gray-500 rounded-md p-2 text-white focus:outline-none focus:border-teal-400">
-                    <!-- Options populated by JS -->
-                </select>
-            </div>
+<!-- Body now uses min-h-screen and flex flex-col to ensure the content wrapper fills the space -->
+<body class="bg-gray-900 text-white min-h-screen p-4 flex flex-col items-center">
+    <!-- Main container updated to flex-grow and h-full -->
+    <div class="main-container flex flex-col h-full flex-grow items-center w-full">
+        <!-- Content Wrapper is now a flex column that takes up vertical space -->
+        <!-- *** Vertical Space Optimized: Changed p-6 to p-4 and space-y-4 to space-y-3 *** -->
+        <div class="content-wrapper bg-gray-800 rounded-xl shadow-2xl p-4 w-full space-y-3 flex flex-col h-full">
+            <header class="text-center border-b border-gray-700 pb-3 flex-shrink-0">
+                <h1 class="text-4xl font-extrabold text-teal-400 tracking-tight font-serif">AlgoTrader <span class="text-xl font-light text-gray-400">v1.3 - Precision Margin Trading Simulator</span></h1>
+                <p class="text-sm text-gray-500 mt-1">Simulate margin trading with real-time PnL and risk tracking across multiple asset classes.</p>
+            </header>
             
-            <!-- Current Price Ticker & Unit -->
-            <div class="flex items-center space-x-3 mt-3 sm:mt-0 sm:w-1/2 justify-end">
-                <span id="current-price" class="text-4xl font-extrabold text-white transition-colors duration-500">150.00</span>
-                <span id="unit-label" class="text-xl font-light text-gray-400">JPY</span>
-            </div>
-        </div>
-        
-        <!-- PnL & Equity Row -->
-         <div class="flex flex-col sm:flex-row justify-between items-center bg-gray-700 p-4 rounded-lg shadow-md">
-            <div class="text-center sm:text-left">
-                <span class="text-lg font-medium text-gray-300">Equity (Cash + PnL):</span>
-                <span id="equity" class="text-3xl font-bold text-green-400 block">$100,000.00</span>
-            </div>
-            <div class="text-center sm:text-right mt-3 sm:mt-0">
-                <span class="text-lg font-medium text-gray-300">Unrealized PnL:</span>
-                <!-- Updated PnL Display -->
-                <span id="unrealized-pnl" class="text-3xl font-bold text-green-400 block">+$0.00</span>
-            </div>
-        </div>
-        
-        <!-- Status Message -->
-        <div id="status-message" class="text-center text-sm font-semibold text-amber-400">
-            Initializing market data...
-        </div>
-
-        <!-- Chart Area: Container for Canvas and Price Axis -->
-        <div class="flex space-x-2">
-            <!-- Price Axis (Y-Axis) -->
-            <div id="price-axis" class="h-64 w-16 flex flex-col justify-between text-right text-xs pt-1 pb-4 pr-1">
-                <!-- Labels dynamically inserted here -->
-            </div>
-            <!-- Canvas Container -->
-            <div id="chart-container" class="flex-grow bg-gray-900 border border-gray-600 rounded-lg overflow-hidden relative">
-                <canvas id="price-chart" class="w-full h-full"></canvas>
-                <!-- Time Axis Overlay -->
-                <div class="absolute inset-0 flex items-end justify-between p-2 text-xs text-gray-400">
-                    <span>Oldest</span>
-                    <span>Latest</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Portfolio Stats & Trade Controls (Grid Layout) -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            
-            <!-- Portfolio Stats -->
-            <div class="md:col-span-2 space-y-3">
-                <h2 class="text-2xl font-bold text-teal-400 border-b border-gray-700 pb-2">Portfolio Overview</h2>
-                <div class="grid grid-cols-2 gap-3 text-sm font-medium">
-                    <div class="bg-gray-700 p-3 rounded-lg flex justify-between">
-                        <span class="text-gray-400">Bankroll (Cash):</span>
-                        <span id="bankroll" class="text-white font-bold">$100,000.00</span>
-                    </div>
-                     <div class="bg-gray-700 p-3 rounded-lg flex justify-between">
-                        <span class="text-gray-400">Min. Tick Size:</span>
-                        <span id="tick-size" class="text-white font-bold">0.00 JPY</span>
-                    </div>
-                    <div class="bg-gray-700 p-3 rounded-lg flex justify-between">
-                        <span class="text-gray-400">Position Size (Contracts):</span>
-                        <span id="position-size" class="text-white font-bold">0</span>
-                    </div>
-                    <div class="bg-gray-700 p-3 rounded-lg flex justify-between">
-                        <span class="text-gray-400">Required Margin (Total):</span>
-                        <span id="required-margin" class="text-white font-bold">$0.00</span>
-                    </div>
-                    <div class="bg-gray-700 p-3 rounded-lg flex justify-between col-span-2">
-                        <span class="text-gray-400">Avg. Entry Price:</span>
-                        <span id="entry-price" class="text-white font-bold">0.00</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Trade Controls -->
-            <div class="md:col-span-1 space-y-3">
-                <h2 class="text-2xl font-bold text-teal-400 border-b border-gray-700 pb-2">Trade Actions</h2>
-                
-                <!-- Quantity Input -->
-                <div class="flex items-center space-x-2 bg-gray-700 p-3 rounded-lg">
-                    <label for="quantity-input" class="text-gray-400 font-medium">Quantity (Contracts):</label>
-                    <input type="number" id="quantity-input" min="1" value="1" class="w-full bg-gray-600 border border-gray-500 rounded-md px-2 py-1 text-right text-white focus:outline-none focus:border-teal-400" />
+            <!-- Asset Selector / Current Price -->
+            <div class="flex flex-col sm:flex-row justify-between items-center bg-gray-700 p-3 rounded-lg shadow-md flex-shrink-0">
+                <div class="flex items-center space-x-3 w-full sm:w-1/2">
+                    <label for="asset-selector" class="text-lg font-light text-gray-300">Market:</label>
+                    <select id="asset-selector" class="flex-grow bg-gray-600 border border-gray-500 rounded-md p-2 text-white focus:outline-none focus:border-teal-400">
+                        <!-- Options populated by JS -->
+                    </select>
                 </div>
                 
-                <!-- Action Buttons -->
-                <div class="space-y-2">
-                    <button id="buy-btn" class="w-full py-2 rounded-lg font-bold text-lg bg-green-600 hover:bg-green-500 transition duration-150 shadow-lg shadow-green-900/50 disabled:bg-gray-500 disabled:shadow-none">
-                        BUY (LONG)
-                    </button>
-                    <button id="sell-btn" class="w-full py-2 rounded-lg font-bold text-lg bg-red-600 hover:bg-red-500 transition duration-150 shadow-lg shadow-red-900/50 disabled:bg-gray-500 disabled:shadow-none">
-                        SELL (SHORT)
-                    </button>
-                    <button id="close-btn" class="w-full py-2 rounded-lg font-bold text-lg bg-amber-600 hover:bg-amber-500 transition duration-150 shadow-lg shadow-amber-900/50 disabled:bg-gray-500 disabled:shadow-none">
-                        CLOSE POSITION
+                <div class="flex items-center space-x-3 mt-3 sm:mt-0 sm:w-1/2 justify-end">
+                    <span id="current-price" class="text-4xl font-extrabold text-white transition-colors duration-500">150.00</span>
+                    <span id="unit-label" class="text-xl font-light text-gray-400">JPY</span>
+                </div>
+            </div>
+            
+            <!-- PnL & Equity Row -->
+             <div class="flex flex-col sm:flex-row justify-between items-center bg-gray-700 p-3 rounded-lg shadow-md flex-shrink-0">
+                <div class="text-center sm:text-left">
+                    <span class="text-lg font-medium text-gray-300">Equity (Cash + PnL):</span>
+                    <span id="equity" class="text-3xl font-bold text-green-400 block">$100,000.00</span>
+                </div>
+                <div class="text-center sm:text-right mt-3 sm:mt-0">
+                    <span class="text-lg font-medium text-gray-300">Unrealized PnL:</span>
+                    <span id="unrealized-pnl" class="text-3xl font-bold text-green-400 block">+$0.00</span>
+                </div>
+            </div>
+            
+            <!-- Status Message -->
+            <div id="status-message" class="text-center text-sm font-semibold text-amber-400 flex-shrink-0">
+                Initializing market data...
+            </div>
+
+            <!-- Chart Area: The key container set to FLEX-GROW -->
+            <div class="chart-area-row flex space-x-2 flex-grow min-h-[250px]">
+                <!-- Price Axis (Y-Axis) - Updated classes for absolute positioning control -->
+                <div id="price-axis" class="h-full w-16 text-xs flex-shrink-0">
+                    <!-- Labels dynamically inserted here (now using absolute positioning) -->
+                </div>
+                <!-- Canvas Container -->
+                <div id="chart-container" class="flex-grow bg-gray-900 border border-gray-600 rounded-lg overflow-hidden relative">
+                    <canvas id="price-chart" class="w-full h-full"></canvas>
+                    <!-- Time Axis Overlay -->
+                    <div class="absolute inset-0 flex items-end justify-between p-2 text-xs text-gray-400 pointer-events-none">
+                        <span>Oldest</span>
+                        <span>Latest</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Portfolio Stats & Trade Controls (Grid Layout) -->
+            <!-- *** Flex-shrink-0 added to ensure this entire section is prioritized to stay on screen *** -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 flex-shrink-0">
+                
+                <!-- Portfolio Stats -->
+                <div class="md:col-span-2 space-y-3">
+                    <h2 class="text-xl font-bold text-teal-400 border-b border-gray-700 pb-1">Portfolio Overview</h2>
+                    <div class="grid grid-cols-2 gap-3 text-sm font-medium">
+                        <div class="bg-gray-700 p-3 rounded-lg flex justify-between">
+                            <span class="text-gray-400">Bankroll (Cash):</span>
+                            <span id="bankroll" class="text-white font-bold">$100,000.00</span>
+                        </div>
+                         <div class="bg-gray-700 p-3 rounded-lg flex justify-between">
+                            <span class="text-gray-400">Min. Tick Size:</span>
+                            <span id="tick-size" class="text-white font-bold">0.00 JPY</span>
+                        </div>
+                        <div class="bg-gray-700 p-3 rounded-lg flex justify-between">
+                            <span class="text-gray-400">Position Size (Contracts):</span>
+                            <span id="position-size" class="text-white font-bold">0</span>
+                        </div>
+                        <div class="bg-gray-700 p-3 rounded-lg flex justify-between">
+                            <span class="text-gray-400">Required Margin (Total):</span>
+                            <span id="required-margin" class="text-white font-bold">$0.00</span>
+                        </div>
+                        <div class="bg-gray-700 p-3 rounded-lg flex justify-between col-span-2">
+                            <span class="text-gray-400">Avg. Entry Price:</span>
+                            <span id="entry-price" class="text-white font-bold">0.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trade Controls -->
+                <div class="md:col-span-1 space-y-3">
+                    <h2 class="text-xl font-bold text-teal-400 border-b border-gray-700 pb-1">Trade Actions</h2>
+                    
+                    <!-- Quantity Input -->
+                    <div class="flex items-center space-x-2 bg-gray-700 p-2 rounded-lg">
+                        <label for="quantity-input" class="text-gray-400 font-medium text-sm">Quantity:</label>
+                        <input type="number" id="quantity-input" min="1" value="1" class="w-full bg-gray-600 border border-gray-500 rounded-md px-2 py-1 text-right text-white focus:outline-none focus:border-teal-400" />
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="space-y-2">
+                        <!-- Buy and Sell buttons are side-by-side using flex -->
+                        <div class="flex space-x-2">
+                            <button id="buy-btn" class="flex-1 py-2 rounded-lg font-bold text-lg bg-green-600 hover:bg-green-500 transition duration-150 shadow-lg shadow-green-900/50 disabled:bg-gray-500 disabled:shadow-none">
+                                BUY
+                            </button>
+                            <button id="sell-btn" class="flex-1 py-2 rounded-lg font-bold text-lg bg-red-600 hover:bg-red-500 transition duration-150 shadow-lg shadow-red-900/50 disabled:bg-gray-500 disabled:shadow-none">
+                                SELL
+                            </button>
+                        </div>
+                        <button id="close-btn" class="w-full py-2 rounded-lg font-bold text-lg bg-amber-600 hover:bg-amber-500 transition duration-150 shadow-lg shadow-amber-900/50 disabled:bg-gray-500 disabled:shadow-none">
+                            CLOSE POSITION
+                        </button>
+                    </div>
+                    <button id="reset-btn" class="w-full py-1 text-sm rounded-lg font-medium text-gray-400 bg-gray-700 hover:bg-gray-600 transition duration-150 border border-gray-600">
+                        Reset All Data
                     </button>
                 </div>
-                <button id="reset-btn" class="w-full py-1 text-sm rounded-lg font-medium text-gray-400 bg-gray-700 hover:bg-gray-600 transition duration-150 border border-gray-600">
-                    Reset All Data
-                </button>
             </div>
         </div>
     </div>
     
     <!-- Footer Section with Disclaimer and Trademark -->
-    <footer class="mt-8 p-4 w-full max-w-4xl text-center">
-        <div class="text-xs text-gray-400 space-y-2">
-            <!-- Updated Disclaimer -->
+    <footer class="mt-2 p-4 w-full text-center flex-shrink-0">
+        <!-- The content wrapper inside the footer ensures the width constraint -->
+        <div class="text-xs text-gray-400 space-y-2 content-wrapper mx-auto max-w-lg">
             <p class="font-bold text-amber-500">Disclaimer</p>
             <p>
                 This simulator is for <b>educational purposes only</b>. It does not reflect real market conditions, and any outcomes generated should not be considered financial advice. Please consult a qualified financial professional before making real-world investment decisions.
             </p>
-            <!-- Updated Copyright -->
             <p class="pt-2 text-gray-500">
                 &copy; 2025 BullBearJapan, Inc. All rights reserved.
             </p>

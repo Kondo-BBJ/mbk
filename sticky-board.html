@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Your Local Sticky Board</title>
-    <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -35,7 +34,7 @@
         }
         .note-content-area {
             flex-grow: 1; 
-            /* MODIFIED: Increased top padding to create a dedicated drag zone */
+            /* Increased top padding to create a dedicated drag zone */
             padding: 15px 5px 5px 5px; 
             display: flex;
             flex-direction: column;
@@ -54,6 +53,11 @@
             line-height: 1.4;
             user-select: text !important; 
         }
+
+        /* The alignment classes are still defined but will not be used by the toolbar */
+        .note-text-align-center { text-align: center; }
+        .note-text-align-right { text-align: right; }
+        
         .note-container {
             position: relative;
         }
@@ -110,7 +114,6 @@
 
         /* Toolbar Styling */
         .toolbar {
-            /* Now at the bottom, so border-top is used for separation */
             border-top: 1px solid rgba(209, 213, 219, 0.5); /* border-gray-300/50 */
             padding-top: 5px;
             padding-bottom: 2px;
@@ -123,6 +126,7 @@
             font-weight: 500;
             cursor: pointer;
             transition: background-color 0.1s;
+            line-height: 1;
         }
         .toolbar-btn:hover {
             background-color: rgba(0, 0, 0, 0.1);
@@ -146,21 +150,16 @@
 </head>
 <body id="stickyBoard" class="p-0">
 
-    <!-- Header and Info Box - Layout updated to match the centered design -->
     <header class="header bg-transparent py-6 px-6 mb-4 text-center">
-        <!-- Title Change -->
         <h1 class="text-4xl font-extrabold text-gray-800 mb-2">Your Local Sticky Board</h1>
-        <!-- Instructions Updated (removed ** from markup) -->
         <p class="text-lg text-gray-600 flex items-center justify-center">
             <svg class="w-5 h-5 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
             Click the background to create a note. Drag the top margin of the note body to move, and the corner to resize.
         </p>
     </header>
 
-    <!-- Main Note Container -->
     <div id="notesContainer" class="note-container w-full h-full absolute top-0 left-0">
-        <!-- Sticky notes will be appended here -->
-    </div>
+        </div>
 
     <script>
         // Global State & Constants
@@ -169,16 +168,16 @@
         let isResizing = false;
         let dragTimer = 0; 
         
-        // In-memory store: {id: {content, x, y, z, width, height, color, fontSize, fontWeight, fontStyle}}
+        // Removed 'textAlign' from the expected structure as it's no longer editable
         let notes = {}; 
         
         const MIN_SIZE = 220; 
 
         const COLORS = [
-            { name: 'yellow', class: 'bg-yellow-200' }, // #fef08a
-            { name: 'blue', class: 'bg-blue-200' },    // #bfdbfe
-            { name: 'green', class: 'bg-green-200' },   // #d9f99d
-            { name: 'pink', class: 'bg-pink-200' }     // #fecdd3
+            { name: 'yellow', class: 'bg-yellow-200' }, 
+            { name: 'blue', class: 'bg-blue-200' },    
+            { name: 'green', class: 'bg-green-200' },   
+            { name: 'pink', class: 'bg-pink-200' }     
         ];
         
         const FONT_SIZES = [
@@ -186,6 +185,8 @@
             { label: 'M', value: 'md', class: 'text-base' },
             { label: 'L', value: 'lg', class: 'text-lg' }
         ];
+
+        // REMOVED: FONT_ALIGNMENTS array is no longer needed
 
         const DEFAULT_NOTE_PROPS = {
             content: '',
@@ -195,9 +196,10 @@
             width: MIN_SIZE,
             height: MIN_SIZE,
             color: 'yellow',
-            fontSize: 'md', // Default to medium/base size
+            fontSize: 'md', 
             fontWeight: 'normal',
-            fontStyle: 'normal'
+            fontStyle: 'normal',
+            textAlign: 'left' // Kept in data for consistency, defaults to left/no class
         };
 
 
@@ -301,24 +303,32 @@
 
             // 1. Color
             const colorClass = COLORS.find(c => c.name === data.color)?.class || COLORS[0].class;
-            // Remove all existing color classes and apply the new one
             noteEl.classList.remove(...COLORS.map(c => c.class));
             noteEl.classList.add(colorClass);
 
             // 2. Font Styles (Applied to textarea)
             const textarea = noteEl.querySelector('textarea');
             if (textarea) {
-                // Clear existing font style classes (Bold, Italic, and all Sizes)
+                // Clear existing font style classes (Bold, Italic, all Sizes, and Alignment)
                 textarea.classList.remove('font-bold', 'italic', 'font-normal', 'not-italic');
                 textarea.classList.remove(...FONT_SIZES.map(s => s.class));
-
+                
+                // Manually remove the specific alignment classes since FONT_ALIGNMENTS is gone
+                textarea.classList.remove('note-text-align-center', 'note-text-align-right'); 
+                
                 // Apply new styles
                 textarea.classList.add(data.fontWeight === 'bold' ? 'font-bold' : 'font-normal');
                 textarea.classList.add(data.fontStyle === 'italic' ? 'italic' : 'not-italic');
                 
-                // Find and apply the correct font size class
                 const fontSizeClass = FONT_SIZES.find(s => s.value === data.fontSize)?.class || FONT_SIZES[1].class;
                 textarea.classList.add(fontSizeClass);
+
+                // Re-apply alignment class if needed (defaults to left/no class)
+                if (data.textAlign === 'center') {
+                    textarea.classList.add('note-text-align-center');
+                } else if (data.textAlign === 'right') {
+                    textarea.classList.add('note-text-align-right');
+                }
             }
 
             // 3. Toolbar Active States (Applied to controls)
@@ -343,6 +353,8 @@
                 // Bold/Italic buttons
                 toolbar.querySelector('[data-style="bold"]').classList.toggle('active', data.fontWeight === 'bold');
                 toolbar.querySelector('[data-style="italic"]').classList.toggle('active', data.fontStyle === 'italic');
+                
+                // REMOVED: Alignment button active states are no longer checked
             }
         }
 
@@ -350,11 +362,15 @@
          * Creates the configuration toolbar for a sticky note.
          */
         function createToolbar(noteId) {
-            // Updated class: Removed border-b and mb-1, added border-t and mt-1 (CSS handles the border now)
             const toolbar = document.createElement('div');
             toolbar.className = 'toolbar flex items-center justify-between p-1 mt-1'; 
 
-            // --- 1. Color Selection ---
+            // --- 1. Left Group: Color Selection ---
+            const leftGroup = document.createElement('div');
+            // MODIFIED: Removed 'space-x-2' to make group tighter, removed border-l/pl-2
+            leftGroup.className = 'flex items-center space-x-1'; 
+
+            // Color Selection
             const colorGroup = document.createElement('div');
             colorGroup.className = 'flex space-x-1';
             
@@ -371,12 +387,16 @@
                 });
                 colorGroup.appendChild(dot);
             });
-            toolbar.appendChild(colorGroup);
+            leftGroup.appendChild(colorGroup);
+
+            // REMOVED: Alignment Buttons (alignGroup) removed here
+            
+            toolbar.appendChild(leftGroup);
 
 
-            // --- 2. Font Style and Size Controls ---
-            const styleGroup = document.createElement('div');
-            styleGroup.className = 'flex items-center space-x-1 text-xs text-gray-700';
+            // --- 2. Right Group: Font Style and Size Controls ---
+            const rightGroup = document.createElement('div');
+            rightGroup.className = 'flex items-center space-x-1 text-xs text-gray-700';
 
             // Bold Button
             const boldBtn = document.createElement('span');
@@ -408,13 +428,13 @@
                 applyNoteStyles(document.getElementById(noteId), notes[noteId]);
             });
             
-            styleGroup.appendChild(boldBtn);
-            styleGroup.appendChild(italicBtn);
+            rightGroup.appendChild(boldBtn);
+            rightGroup.appendChild(italicBtn);
             
             // Font Size Buttons
             FONT_SIZES.forEach(size => {
                 const sizeBtn = document.createElement('span');
-                sizeBtn.className = `toolbar-btn size-btn select-none`; // Remove initial size class here, let applyNoteStyles handle it
+                sizeBtn.className = `toolbar-btn size-btn select-none`;
                 sizeBtn.textContent = size.label;
                 sizeBtn.setAttribute('data-size', size.value);
                 sizeBtn.title = `Font Size ${size.label}`;
@@ -424,10 +444,10 @@
                     saveNote(noteId, { fontSize: size.value });
                     applyNoteStyles(document.getElementById(noteId), notes[noteId]);
                 });
-                styleGroup.appendChild(sizeBtn);
+                rightGroup.appendChild(sizeBtn);
             });
 
-            toolbar.appendChild(styleGroup);
+            toolbar.appendChild(rightGroup);
 
             return toolbar;
         }
@@ -563,7 +583,7 @@
             // --- DRAGGING LOGIC ---
 
             let isLocalDragging = false;
-            let currentX, currentY, initialX, initialY, xOffset = 0, yOffset = 0, noteMoved = false;
+            let currentX, currentY, offsetX, offsetY, noteMoved = false;
 
             const dragStart = (e) => {
                 // If currently resizing, don't start dragging
@@ -586,9 +606,11 @@
 
                 const clientX = e.clientX || e.touches[0].clientX;
                 const clientY = e.clientY || e.touches[0].clientY;
-
-                initialX = clientX - xOffset;
-                initialY = clientY - yOffset;
+                
+                // Calculate the offset from the click point to the note's top-left corner
+                const rect = note.getBoundingClientRect();
+                offsetX = clientX - rect.left;
+                offsetY = clientY - rect.top;
             }
 
             const drag = (e) => {
@@ -598,11 +620,9 @@
                 const clientX = e.clientX || e.touches[0].clientX;
                 const clientY = e.clientY || e.touches[0].clientY;
 
-                currentX = clientX - initialX;
-                currentY = clientY - initialY;
-
-                xOffset = currentX;
-                yOffset = currentY;
+                // Calculate new position by subtracting the offset from the current client position
+                currentX = clientX - offsetX;
+                currentY = clientY - offsetY;
 
                 note.style.left = `${currentX}px`;
                 note.style.top = `${currentY}px`;
@@ -619,9 +639,6 @@
                     // Save new position
                     saveNote(id, { x: currentX, y: currentY });
                 }
-
-                initialX = currentX;
-                initialY = currentY;
             }
 
             // Attach drag events to the main note body
@@ -631,11 +648,6 @@
             note.addEventListener('touchstart', dragStart);
             document.addEventListener('touchend', dragEnd);
             note.addEventListener('touchmove', drag);
-
-            // Initial positioning of the offsets
-            const rect = note.getBoundingClientRect();
-            xOffset = rect.left;
-            yOffset = rect.top;
 
             container.appendChild(note);
 

@@ -23,6 +23,20 @@
                 }
             }
         }
+
+        async function sendPrompt(prompt) {
+  const response = await fetch(apiUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ prompt })
+  });
+
+  const data = await response.json();
+  console.log(data); // You can replace this with code to display the result in your UI
+}
+
     </script>
     <style>
         /* Ensure the body uses the requested light gray background */
@@ -412,4 +426,5 @@
     </script>
 </body>
 </html>
+
 

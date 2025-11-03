@@ -363,12 +363,8 @@
                 The analysis must be grounded in the current information you search for. Maintain a professional, objective, and analytical tone.`;
 
                 const payload = {
-                    contents: [{ parts: [{ text: userQuery }] }],
-                    tools: [{ "google_search": {} }], // Enable Google Search grounding
-                    systemInstruction: {
-                        parts: [{ text: systemPrompt }]
-                    },
-                };
+  prompt: userQuery
+};
 
                 const result = await fetchWithRetry(payload);
 
@@ -426,5 +422,6 @@
     </script>
 </body>
 </html>
+
 
 

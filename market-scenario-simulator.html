@@ -127,6 +127,55 @@
             color: #1f2937;
         }
 
+        /* PRINT STYLES for PDF Export */
+        @media print {
+            /* Hide everything on the page by default */
+            body > * {
+                visibility: hidden !important;
+            }
+            
+            /* Make ONLY the results container and its children visible */
+            #results-container, 
+            #results-container * {
+                visibility: visible !important;
+            }
+            
+            /* Reset the results container to fill the page */
+            #results-container {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                max-width: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                border: none !important;
+                box-shadow: none !important;
+            }
+
+            /* Ensure the report title (h4) uses black text for printing */
+            #results-container h4 {
+                color: #1f2937 !important; /* Use black text */
+            }
+
+            /* Hide the buttons from the print view */
+            #button-wrapper {
+                display: none !important;
+            }
+            
+            /* Custom print footer (Only Page Number is reliable) */
+            @page {
+                size: A4 portrait;
+                margin: 1.5cm; /* Ensure space for header/footer */
+
+                /* Page Number */
+                @bottom-right {
+                    content: "Page " counter(page) " of " counter(pages);
+                    font-size: 8pt;
+                    color: #555;
+                }
+            }
+        }
     </style>
     <!-- Load Inter Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -165,9 +214,17 @@
                     <!-- Sources will be injected here -->
                 </div>
                 
-                <!-- New Copy Button (Wrapped for centering and width) -->
-                <div class="flex justify-center">
-                    <button type="button" id="copy-btn" onclick="copyReport()" class="mt-6 w-full md:w-1/2 bg-gray-200 hover:bg-gray-300 text-text-dark font-bold py-2 rounded-lg transition duration-300 flex items-center justify-center shadow-md">
+                <!-- NEW: Report Date (Injected as content) -->
+                <p id="report-date" class="text-xs text-right text-gray-500 mt-4"></p>
+
+                <!-- Wrapper for buttons -->
+                <div id="button-wrapper" class="flex flex-col md:flex-row justify-center gap-4 mt-6">
+                    <!-- PDF Button -->
+                    <button type="button" id="pdf-btn" onclick="exportToPDF()" class="w-full md:w-1/4 bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-lg transition duration-300 flex items-center justify-center shadow-md">
+                        <span id="pdf-btn-text">📄 Export to PDF</span>
+                    </button>
+                    <!-- Copy Button -->
+                    <button type="button" id="copy-btn" onclick="copyReport()" class="w-full md:w-1/4 bg-gray-200 hover:bg-gray-300 text-text-dark font-bold py-2 rounded-lg transition duration-300 flex items-center justify-center shadow-md">
                         <span id="copy-btn-text">📋 Copy Report to Clipboard</span>
                     </button>
                 </div>
@@ -189,10 +246,19 @@
         const resultsContainer = document.getElementById('results-container');
         const analysisText = document.getElementById('analysis-text');
         const sourcesDisplay = document.getElementById('sources-display');
+        const reportDate = document.getElementById('report-date'); // NEW Element reference
         const submitBtn = document.getElementById('submit-btn');
         const btnText = document.getElementById('btn-text');
         const loadingSpinner = document.getElementById('loading-spinner');
         const errorMessage = document.getElementById('error-message');
+        
+        /**
+         * Triggers the browser's print dialog to export the report to PDF.
+         */
+        function exportToPDF() {
+            // No date injection needed here; the date is already in the DOM content.
+            window.print();
+        }
 
         /**
          * Copies the user's prompt and the generated analysis report to the clipboard.
@@ -201,6 +267,7 @@
             const promptText = document.getElementById('scenario-prompt').value.trim();
             const reportContent = document.getElementById('analysis-text').innerText;
             const sourcesText = document.getElementById('sources-display').innerText;
+            const reportDateText = document.getElementById('report-date').innerText; // Include date in copy
             const copyButtonText = document.getElementById('copy-btn-text');
 
             if (!reportContent) return;
@@ -212,6 +279,7 @@
                 "\n--- ANALYSIS ---",
                 reportContent,
                 `\n${sourcesText}`,
+                `${reportDateText}\n`, // Add the date here
                 "-------------------------------------------------------"
             ].join('\n');
 
@@ -256,22 +324,11 @@
             // 1. Remove Windows carriage returns
             let html = markdownText.replace(/\r/g, '');
             
-            // --- NEW FIX: Convert Key Point pattern to structured HTML ---
+            // --- FIX: Convert Key Point pattern to structured HTML ---
             // Pattern: **Bold Label:** *Italic Content* (This often breaks and leaves an asterisk)
             // Replacement: <div class="key-point"><strong>Bold Label:</strong> Non-Italic Content</div>
-            // This replacement must happen *before* generic bold/italic replacement.
-            // Regex explanation:
-            // \*\* - match literal ** (start bold)
-            // (.*?): - capture content until colon, non-greedy (The label)
-            // \*\* - match literal ** (end bold)
-            // \s* - match optional whitespace
-            // \* - match literal * (start italic)
-            // (.*?) - capture content until next * or end of line (The content)
-            // \*? - optionally match single * at the end (This captures the rogue asterisk)
-            // $ - match end of line
             const keyPointRegex = /\*\*(.*?):\*\*\s*\*(.*?)\*?\s*$/gm;
             html = html.replace(keyPointRegex, (match, label, content) => {
-                // Remove any remaining * within the captured content just in case, and trim
                 const cleanedContent = content.trim().replace(/\*/g, ''); 
                 return `<div class="key-point"><strong>${label.trim()}:</strong> ${cleanedContent}</div>`;
             });
@@ -324,7 +381,6 @@
             html = html.replace(/\\neutral/g, '↔'); 
 
             // 4. Final cleanup for lone asterisks: Remove any remaining single asterisks. 
-            // This is now the last check, ensuring only rogue formatting marks are removed.
             html = html.replace(/\*/g, ''); 
 
             const lines = html.split('\n');
@@ -463,6 +519,7 @@
             errorMessage.classList.add('hidden');
             analysisText.innerHTML = '';
             sourcesDisplay.innerHTML = '';
+            reportDate.textContent = ''; // Clear date field
             btnText.textContent = 'ANALYZING...';
             loadingSpinner.classList.remove('hidden');
             submitBtn.disabled = true;
@@ -523,6 +580,16 @@
                 } else {
                     sourcesDisplay.innerHTML = '<p class="text-gray-500">No external sources were used for this conceptual scenario.</p>';
                 }
+                
+                // Set the current date into the new report element
+                const now = new Date();
+                const dateString = now.toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                });
+                reportDate.textContent = `Report Generated: ${dateString}`;
+
 
                 resultsContainer.classList.remove('hidden');
                 

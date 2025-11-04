@@ -617,33 +617,46 @@
             }
         }
 
+
 function exportToPPT() {
-  const markdown = document.getElementById("analysis-text").innerText;
-  if (!markdown.trim()) return;
-
+  const container = document.getElementById("analysis-text");
   const pptx = new PptxGenJS();
-  const sections = markdown.split(/#{5}\s+/).filter(Boolean);
 
-  sections.forEach(section => {
-    const lines = section.trim().split("\n").filter(Boolean);
-    const title = lines[0].trim();
-    const bullets = lines.slice(1).map(line => line.replace(/^[-*•]\s*/, "").trim());
+  const children = Array.from(container.children);
+  let currentSlide = null;
+  let bulletCount = 0;
 
-    const slide = pptx.addSlide();
-    slide.addText(title, { x: 0.5, y: 0.4, fontSize: 24, bold: true, color: '363636' });
-
-    bullets.slice(0, 6).forEach((text, i) => {
-      slide.addText(`• ${text}`, {
-        x: 0.7,
-        y: 1 + i * 0.6,
-        fontSize: 18,
-        color: '444444'
+  children.forEach((el) => {
+    if (el.tagName === "H5") {
+      // Start a new slide
+      currentSlide = pptx.addSlide();
+      currentSlide.addText(el.innerText, {
+        x: 0.5,
+        y: 0.4,
+        fontSize: 24,
+        bold: true,
+        color: "363636",
       });
-    });
+      bulletCount = 0;
+    } else if (
+      currentSlide &&
+      (el.tagName === "P" || el.tagName === "LI" || el.classList.contains("key-point"))
+    ) {
+      if (bulletCount < 6) {
+        currentSlide.addText(`• ${el.innerText}`, {
+          x: 0.7,
+          y: 1 + bulletCount * 0.6,
+          fontSize: 18,
+          color: "444444",
+        });
+        bulletCount++;
+      }
+    }
   });
 
   pptx.writeFile("Scenario_Analysis_Report.pptx");
 }
+
 
 
     </script>

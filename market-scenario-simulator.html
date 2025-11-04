@@ -622,7 +622,7 @@ function exportToPPT() {
   const container = document.getElementById("analysis-text");
   const pptx = new PptxGenJS();
 
-  // Optional: Add title slide
+  // Title Slide
   const titleSlide = pptx.addSlide();
   titleSlide.addText("BullBearJapan, Inc.", {
     x: 0.5,
@@ -671,9 +671,9 @@ function exportToPPT() {
       // Footer
       currentSlide.addText(`BullBearJapan, Inc. — Slide ${slideIndex}`, {
         x: 0.5,
-        y: 6.8,
+        y: 7.0,
         w: 8.5,
-        fontSize: 12,
+        fontSize: 10,
         color: "888888",
         align: "center",
       });
@@ -686,9 +686,9 @@ function exportToPPT() {
     ) {
       if (bulletCount < 6) {
         currentSlide.addText(`• ${el.innerText}`, {
-          x: 0.8,
+          x: 1.0,
           y: 1.2 + bulletCount * 0.6,
-          w: 8.5,
+          w: 7.5,
           fontSize: 18,
           color: "444444",
         });
@@ -699,7 +699,6 @@ function exportToPPT() {
 
   pptx.writeFile("Scenario_Analysis_Report.pptx");
 }
-
 
     </script>
 </body>

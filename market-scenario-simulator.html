@@ -179,6 +179,9 @@
     </style>
     <!-- Load Inter Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.11.0/dist/pptxgen.bundle.js"></script>
+
 </head>
 <body class="flex justify-center pt-12 pb-24">
 
@@ -223,6 +226,13 @@
                     <button type="button" id="pdf-btn" onclick="exportToPDF()" class="w-full md:w-1/4 bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-lg transition duration-300 flex items-center justify-center shadow-md">
                         <span id="pdf-btn-text">📄 Export to PDF</span>
                     </button>
+
+		    <!-- PPT Button -->
+		    <button type="button" id="ppt-btn" onclick="exportToPPT()" class="w-full md:w-1/4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg transition duration-300 flex items-center justify-center shadow-md">
+			<span id="ppt-btn-text">📊 Export to PPT</span>
+		    </button>
+
+
                     <!-- Copy Button -->
                     <button type="button" id="copy-btn" onclick="copyReport()" class="w-full md:w-1/4 bg-gray-200 hover:bg-gray-300 text-text-dark font-bold py-2 rounded-lg transition duration-300 flex items-center justify-center shadow-md">
                         <span id="copy-btn-text">📋 Copy Report to Clipboard</span>
@@ -606,6 +616,36 @@
                 submitBtn.disabled = false;
             }
         }
+
+function exportToPPT() {
+  const markdown = document.getElementById("analysis-text").innerText;
+  if (!markdown.trim()) return;
+
+  const pptx = new PptxGenJS();
+  const sections = markdown.split(/#{5}\s+/).filter(Boolean);
+
+  sections.forEach(section => {
+    const lines = section.trim().split("\n").filter(Boolean);
+    const title = lines[0].trim();
+    const bullets = lines.slice(1).map(line => line.replace(/^[-*•]\s*/, "").trim());
+
+    const slide = pptx.addSlide();
+    slide.addText(title, { x: 0.5, y: 0.4, fontSize: 24, bold: true, color: '363636' });
+
+    bullets.slice(0, 6).forEach((text, i) => {
+      slide.addText(`• ${text}`, {
+        x: 0.7,
+        y: 1 + i * 0.6,
+        fontSize: 18,
+        color: '444444'
+      });
+    });
+  });
+
+  pptx.writeFile("Scenario_Analysis_Report.pptx");
+}
+
+
     </script>
 </body>
 </html>

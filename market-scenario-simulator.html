@@ -297,6 +297,13 @@
             html = html.replace(/\\down/g, '↓'); 
             html = html.replace(/\\neutral/g, '↔'); 
 
+            // --- NEW FIX: Final cleanup for lone asterisks ---
+            // Remove any remaining single asterisks. These are almost certainly remnants
+            // of malformed markdown (like the 'should*' issue) and not intended as list markers
+            // or multiplication symbols (which are already handled/removed).
+            html = html.replace(/\*/g, ''); 
+            // ------------------------------------------------
+
             const lines = html.split('\n');
             let inTable = false;
             let inList = false;

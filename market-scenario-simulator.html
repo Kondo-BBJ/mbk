@@ -230,8 +230,9 @@
             html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'); 
 
             // --- FIX: Handle LaTeX Display Math $$...$$ by wrapping it in a styled block ---
-            // Use 'gs' (global, dotAll) to capture content across multiple lines
-            html = html.replace(/\$\$(.*?)\$\$/gs, (match, content) => {
+            // The regex now correctly escapes the dollar signs (\$\$) and uses [\s\S]*? 
+            // to safely capture content across multiple lines without the need for the 's' flag.
+            html = html.replace(/\$\$([\s\S]*?)\$\$/g, (match, content) => {
                 // Wrap content in a styled div for visual separation and monospace font
                 return `<div class="formula-block">${content.trim()}</div>`;
             });

@@ -662,7 +662,7 @@ function exportToPPT() {
 
       // Footer
       currentSlide.addText(`BullBearJapan, Inc. — Slide ${slideIndex}`, {
-        x: 0.5, y: 6.5, w: 9.0,
+        x: 0.5, y: 6.0, w: 9.0,
         fontSize: 10, color: "888888", align: "center"
       });
 
@@ -678,7 +678,7 @@ function exportToPPT() {
     if (idx === children.length - 1 && currentSlide && bullets.length > 0) {
       const bulletText = bullets.join("\n");
       currentSlide.addText(bulletText, {
-        x: 0.5, y: 1.8, w: 9.0, h: 4.2,
+        x: 0.5, y: 1.6, w: 9.0, h: 4.0,
         fontSize: 18, color: "444444", lineSpacingMultiple: 1.2
       });
     }

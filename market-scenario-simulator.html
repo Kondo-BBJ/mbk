@@ -648,7 +648,7 @@ function exportToPPT() {
       if (currentSlide && bullets.length > 0) {
         const bulletText = bullets.join("\n");
         currentSlide.addText(bulletText, {
-          x: 0.5, y: 1.6, w: 9.0, h: 3.8,
+          x: 0.5, y: 1.4, w: 9.0, h: 3.8,
           fontSize: 18, color: "444444", lineSpacingMultiple: 1.2
         });
         bullets = [];
@@ -659,13 +659,13 @@ function exportToPPT() {
 
       // Title
       currentSlide.addText(el.innerText, {
-        x: 0.5, y: 0.5, w: 9.0, h: 1.0,
+        x: 0.5, y: 0.4, w: 9.0, h: 1.0,
         fontSize: 26, bold: true, align: "center", color: "003366"
       });
 
       // Footer
       currentSlide.addText(`BullBearJapan, Inc. — Slide ${slideIndex}`, {
-        x: 0.5, y: 5.6, w: 9.0,
+        x: 0.5, y: 5.8, w: 9.0,
         fontSize: 10, color: "888888", align: "center"
       });
 
@@ -681,7 +681,7 @@ function exportToPPT() {
     if (idx === children.length - 1 && currentSlide && bullets.length > 0) {
       const bulletText = bullets.join("\n");
       currentSlide.addText(bulletText, {
-        x: 0.5, y: 1.6, w: 9.0, h: 3.8,
+        x: 0.5, y: 1.4, w: 9.0, h: 3.8,
         fontSize: 18, color: "444444", lineSpacingMultiple: 1.2
       });
     }

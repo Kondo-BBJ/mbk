@@ -236,9 +236,9 @@
                 let formula = content.trim();
 
                 // 1. Remove LaTeX text commands (\text{...} or \mathrm{...}) and keep content
-                // This cleans up descriptive text inside the formula.
-                formula = formula.replace(/\\text{([^}]+)}/g, '$1');
-                formula = formula.replace(/\\mathrm{([^}]+)}/g, '$1');
+                // UPDATED: Added \s* to handle spaces after the command name (\text{ content } vs \text { content })
+                formula = formula.replace(/\\text\s*{([^}]+)}/g, '$1');
+                formula = formula.replace(/\\mathrm\s*{([^}]+)}/g, '$1');
 
                 // 2. Replace common mathematical symbols with Unicode characters for better display
                 formula = formula.replace(/\\times/g, '×'); // Multiplication sign

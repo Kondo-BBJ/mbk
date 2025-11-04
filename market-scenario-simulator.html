@@ -250,9 +250,14 @@
                 // Use the same cleanup for text commands and symbols
                 inlineFormula = inlineFormula.replace(/\\text\s*{([^}]+)}/g, '$1');
                 inlineFormula = inlineFormula.replace(/\\mathrm\s*{([^}]+)}/g, '$1');
+                
+                // Replace common mathematical symbols with Unicode characters
                 inlineFormula = inlineFormula.replace(/\\times/g, '×');
                 inlineFormula = inlineFormula.replace(/\\div/g, '÷');
                 inlineFormula = inlineFormula.replace(/\\cdot/g, '•');
+                
+                // Clean up remaining backslashes from un-parsed LaTeX commands (e.g., Greek letters)
+                inlineFormula = inlineFormula.replace(/\\/g, '');
 
                 // Wrap in a simple inline span for styling
                 return `<span class="inline-formula font-mono text-primary-blue">${inlineFormula.trim()}</span>`;
@@ -275,7 +280,10 @@
                 formula = formula.replace(/\\div/g, '÷');   // Division sign
                 formula = formula.replace(/\\cdot/g, '•');   // Dot
                 
-                // 3. Trim whitespace again and put in the styled block
+                // 3. Clean up remaining backslashes from un-parsed LaTeX commands (e.g., Greek letters)
+                formula = formula.replace(/\\/g, '');
+                
+                // 4. Trim whitespace again and put in the styled block
                 return `<div class="formula-block">${formula.trim()}</div>`;
             });
             // --------------------------------------------------------------------------

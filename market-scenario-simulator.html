@@ -641,19 +641,34 @@ function exportToPPT() {
 
   children.forEach((el, idx) => {
     if (el.tagName === "H5") {
-      // If we have bullets from the previous section, render them
+      // Flush previous bullets
       if (currentSlide && bullets.length > 0) {
-        currentSlide.addText(bullets.join("\n"), {
-          x: 1.0, y: 1.5, w: 7.5, h: 4.5,
-          fontSize: 18, color: "444444", lineSpacingMultiple: 1.2
+        const bulletText = bullets.join("\n");
+        const bulletCount = bullets.length;
+
+        // Auto-adjust font size and spacing
+        let fontSize = 18;
+        let lineSpacing = 1.2;
+        if (bulletCount > 6) {
+          fontSize = 16;
+          lineSpacing = 1.0;
+        }
+        if (bulletCount > 10) {
+          fontSize = 14;
+          lineSpacing = 0.8;
+        }
+
+        currentSlide.addText(bulletText, {
+          x: 0.5, y: 1.5, w: 8.5, h: 4.5,
+          fontSize: fontSize, color: "444444", lineSpacingMultiple: lineSpacing
         });
         bullets = [];
       }
 
-      // Start a new slide
+      // New slide
       currentSlide = pptx.addSlide();
 
-      // Title box
+      // Title
       currentSlide.addText(el.innerText, {
         x: 0.5, y: 0.5, w: 8.5, h: 1,
         fontSize: 26, bold: true, align: "center", color: "003366"
@@ -673,11 +688,25 @@ function exportToPPT() {
       bullets.push(`• ${el.innerText.trim()}`);
     }
 
-    // If it's the last element, flush bullets
+    // Final flush
     if (idx === children.length - 1 && currentSlide && bullets.length > 0) {
-      currentSlide.addText(bullets.join("\n"), {
-        x: 1.0, y: 1.5, w: 7.5, h: 4.5,
-        fontSize: 18, color: "444444", lineSpacingMultiple: 1.2
+      const bulletText = bullets.join("\n");
+      const bulletCount = bullets.length;
+
+      let fontSize = 18;
+      let lineSpacing = 1.2;
+      if (bulletCount > 6) {
+        fontSize = 16;
+        lineSpacing = 1.0;
+      }
+      if (bulletCount > 10) {
+        fontSize = 14;
+        lineSpacing = 0.8;
+      }
+
+      currentSlide.addText(bulletText, {
+        x: 0.5, y: 1.5, w: 8.5, h: 4.5,
+        fontSize: fontSize, color: "444444", lineSpacingMultiple: lineSpacing
       });
     }
   });

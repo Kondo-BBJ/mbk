@@ -236,7 +236,12 @@
             let html = markdownText.replace(/\r/g, '');
             html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'); 
             
-            // --- NEW: Handle inline LaTeX math $...$ ---
+            // --- FIX: Convert *italics* to <em>
+            // This replacement should happen after bold conversion to prevent matching **text** as *text*
+            html = html.replace(/\*(.*?)\*/g, '<em>$1</em>'); 
+            // ------------------------------------
+            
+            // --- Handle inline LaTeX math $...$ ---
             // This captures content between single $ signs, ensuring it's not preceded/followed by a digit 
             // (to avoid matching currency) and it's not the start of a $$ block.
             html = html.replace(/(?<!\$)\$(?!\$)([^\s\$][^\$]*[^\s\$])(?<!\$)\$(?!\$)/g, (match, content) => {

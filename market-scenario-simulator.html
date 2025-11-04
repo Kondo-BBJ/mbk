@@ -644,29 +644,10 @@ function exportToPPT() {
       // Flush previous bullets
       if (currentSlide && bullets.length > 0) {
         const bulletText = bullets.join("\n");
-        const bulletCount = bullets.length;
-
-        // Auto-adjust font size and spacing
-        let fontSize = 18;
-        let lineSpacing = 1.2;
-        if (bulletCount > 6) {
-          fontSize = 16;
-          lineSpacing = 1.0;
-        }
-        if (bulletCount > 10) {
-          fontSize = 14;
-          lineSpacing = 0.8;
-        }
-
-        // Calculate dynamic height
-        const lineHeight = fontSize * lineSpacing * 0.035; // approx conversion to slide units
-        const contentHeight = Math.min(lineHeight * bulletCount, 4.8); // max height before footer
-
         currentSlide.addText(bulletText, {
-          x: 0.5, y: 1.5, w: 8.5, h: contentHeight,
-          fontSize: fontSize, color: "444444", lineSpacingMultiple: lineSpacing
+          x: 0.5, y: 1.8, w: 8.5, h: 4.8,
+          fontSize: 18, color: "444444", lineSpacingMultiple: 1.2
         });
-
         bullets = [];
       }
 
@@ -675,7 +656,7 @@ function exportToPPT() {
 
       // Title
       currentSlide.addText(el.innerText, {
-        x: 0.5, y: 0.5, w: 8.5, h: 1,
+        x: 0.5, y: 0.5, w: 8.5, h: 1.0,
         fontSize: 26, bold: true, align: "center", color: "003366"
       });
 
@@ -696,26 +677,10 @@ function exportToPPT() {
     // Final flush
     if (idx === children.length - 1 && currentSlide && bullets.length > 0) {
       const bulletText = bullets.join("\n");
-      const bulletCount = bullets.length;
-
-      let fontSize = 18;
-      let lineSpacing = 1.2;
-      if (bulletCount > 6) {
-        fontSize = 16;
-        lineSpacing = 1.0;
-      }
-      if (bulletCount > 10) {
-        fontSize = 14;
-        lineSpacing = 0.8;
-      }
-
-      const lineHeight = fontSize * lineSpacing * 0.035;
-const contentHeight = 5.0;
-
       currentSlide.addText(bulletText, {
-  x: 0.5, y: 1.5, w: 8.5, h: contentHeight,
-  fontSize: fontSize, color: "444444", lineSpacingMultiple: lineSpacing
-});
+        x: 0.5, y: 1.8, w: 8.5, h: 4.8,
+        fontSize: 18, color: "444444", lineSpacingMultiple: 1.2
+      });
     }
   });
 

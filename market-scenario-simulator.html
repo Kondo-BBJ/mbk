@@ -625,32 +625,22 @@ function exportToPPT() {
   // Title Slide
   const titleSlide = pptx.addSlide();
   titleSlide.addText("BullBearJapan, Inc.", {
-    x: 0.5,
-    y: 1,
-    fontSize: 32,
-    bold: true,
-    align: "center",
-    color: "003366",
+    x: 0.5, y: 1, fontSize: 32, bold: true, align: "center", color: "003366"
   });
   titleSlide.addText("Scenario Analysis Report", {
-    x: 0.5,
-    y: 2,
-    fontSize: 24,
-    align: "center",
-    color: "444444",
+    x: 0.5, y: 2, fontSize: 24, align: "center", color: "444444"
   });
   titleSlide.addText(`Generated: ${new Date().toLocaleDateString()}`, {
-    x: 0.5,
-    y: 3,
-    fontSize: 14,
-    align: "center",
-    color: "888888",
+    x: 0.5, y: 3, fontSize: 14, align: "center", color: "888888"
   });
 
   const children = Array.from(container.children);
   let currentSlide = null;
   let bulletCount = 0;
   let slideIndex = 1;
+  const maxBullets = 6;
+  const bulletSpacing = 0.7;
+  const bulletStartY = 1.5;
 
   children.forEach((el) => {
     if (el.tagName === "H5") {
@@ -658,24 +648,14 @@ function exportToPPT() {
 
       // Title
       currentSlide.addText(el.innerText, {
-        x: 0.5,
-        y: 0.5,
-        w: 8.5,
-        h: 1,
-        fontSize: 26,
-        bold: true,
-        align: "center",
-        color: "003366",
+        x: 0.5, y: 0.5, w: 8.5, h: 1,
+        fontSize: 26, bold: true, align: "center", color: "003366"
       });
 
       // Footer
       currentSlide.addText(`BullBearJapan, Inc. — Slide ${slideIndex}`, {
-        x: 0.5,
-        y: 7.0,
-        w: 8.5,
-        fontSize: 10,
-        color: "888888",
-        align: "center",
+        x: 0.5, y: 7.0, w: 8.5,
+        fontSize: 10, color: "888888", align: "center"
       });
 
       bulletCount = 0;
@@ -684,13 +664,11 @@ function exportToPPT() {
       currentSlide &&
       (el.tagName === "P" || el.tagName === "LI" || el.classList.contains("key-point"))
     ) {
-      if (bulletCount < 6) {
+      if (bulletCount < maxBullets) {
+        const yPos = bulletStartY + bulletCount * bulletSpacing;
         currentSlide.addText(`• ${el.innerText}`, {
-          x: 1.0,
-          y: 1.2 + bulletCount * 0.6,
-          w: 7.5,
-          fontSize: 18,
-          color: "444444",
+          x: 1.0, y: yPos, w: 7.5,
+          fontSize: 18, color: "444444"
         });
         bulletCount++;
       }

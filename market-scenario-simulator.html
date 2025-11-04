@@ -657,13 +657,13 @@ function exportToPPT() {
       // New slide
       currentSlide = pptx.addSlide();
 
-      // Title
+      // Title box (slightly higher)
       currentSlide.addText(el.innerText, {
         x: 0.5, y: 0.4, w: 9.0, h: 1.0,
         fontSize: 26, bold: true, align: "center", color: "003366"
       });
 
-      // Footer
+      // Footer (moved up to stay inside slide)
       currentSlide.addText(`BullBearJapan, Inc. — Slide ${slideIndex}`, {
         x: 0.5, y: 5.8, w: 9.0,
         fontSize: 10, color: "888888", align: "center"
@@ -675,10 +675,9 @@ function exportToPPT() {
       (el.tagName === "P" || el.tagName === "LI" || el.classList.contains("key-point"))
     ) {
       const text = el.innerText.trim();
-if (text && text !== "---") {
-  bullets.push(`• ${text}`);
-}
-
+      if (text && text !== "---") {
+        bullets.push(`• ${text}`);
+      }
     }
 
     // Final flush

@@ -622,20 +622,20 @@ function exportToPPT() {
   const container = document.getElementById("analysis-text");
   const pptx = new PptxGenJS();
 
-  // Title Slide
-const titleSlide = pptx.addSlide();
-titleSlide.addText("BullBearJapan, Inc.", {
-  x: 0.5, y: 1.5, w: 9.0,
-  fontSize: 32, bold: true, align: "center", color: "003366"
-});
-titleSlide.addText("Scenario Analysis Report", {
-  x: 0.5, y: 2.5, w: 9.0,
-  fontSize: 24, align: "center", color: "444444"
-});
-titleSlide.addText(`Generated: ${new Date().toLocaleDateString()}`, {
-  x: 0.5, y: 3.5, w: 9.0,
-  fontSize: 14, align: "center", color: "888888"
-});
+  // Title Slide (centered for 16:9)
+  const titleSlide = pptx.addSlide();
+  titleSlide.addText("BullBearJapan, Inc.", {
+    x: 0.5, y: 1.5, w: 9.0,
+    fontSize: 32, bold: true, align: "center", color: "003366"
+  });
+  titleSlide.addText("Scenario Analysis Report", {
+    x: 0.5, y: 2.5, w: 9.0,
+    fontSize: 24, align: "center", color: "444444"
+  });
+  titleSlide.addText(`Generated: ${new Date().toLocaleDateString()}`, {
+    x: 0.5, y: 3.5, w: 9.0,
+    fontSize: 14, align: "center", color: "888888"
+  });
 
   const children = Array.from(container.children);
   let currentSlide = null;
@@ -648,7 +648,7 @@ titleSlide.addText(`Generated: ${new Date().toLocaleDateString()}`, {
       if (currentSlide && bullets.length > 0) {
         const bulletText = bullets.join("\n");
         currentSlide.addText(bulletText, {
-          x: 0.5, y: 1.8, w: 9.0, h: 4.2,
+          x: 0.5, y: 1.6, w: 9.0, h: 3.8,
           fontSize: 18, color: "444444", lineSpacingMultiple: 1.2
         });
         bullets = [];
@@ -665,7 +665,7 @@ titleSlide.addText(`Generated: ${new Date().toLocaleDateString()}`, {
 
       // Footer
       currentSlide.addText(`BullBearJapan, Inc. — Slide ${slideIndex}`, {
-        x: 0.5, y: 6.0, w: 9.0,
+        x: 0.5, y: 5.6, w: 9.0,
         fontSize: 10, color: "888888", align: "center"
       });
 
@@ -681,7 +681,7 @@ titleSlide.addText(`Generated: ${new Date().toLocaleDateString()}`, {
     if (idx === children.length - 1 && currentSlide && bullets.length > 0) {
       const bulletText = bullets.join("\n");
       currentSlide.addText(bulletText, {
-        x: 0.5, y: 1.6, w: 9.0, h: 4.0,
+        x: 0.5, y: 1.6, w: 9.0, h: 3.8,
         fontSize: 18, color: "444444", lineSpacingMultiple: 1.2
       });
     }

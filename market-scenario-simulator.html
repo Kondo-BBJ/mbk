@@ -636,17 +636,24 @@ function exportToPPT() {
 
   const children = Array.from(container.children);
   let currentSlide = null;
-  let bulletCount = 0;
   let slideIndex = 1;
-  const maxBullets = 6;
-  const bulletSpacing = 0.7;
-  const bulletStartY = 1.5;
+  let bullets = [];
 
-  children.forEach((el) => {
+  children.forEach((el, idx) => {
     if (el.tagName === "H5") {
+      // If we have bullets from the previous section, render them
+      if (currentSlide && bullets.length > 0) {
+        currentSlide.addText(bullets.join("\n"), {
+          x: 1.0, y: 1.5, w: 7.5, h: 4.5,
+          fontSize: 18, color: "444444", lineSpacingMultiple: 1.2
+        });
+        bullets = [];
+      }
+
+      // Start a new slide
       currentSlide = pptx.addSlide();
 
-      // Title
+      // Title box
       currentSlide.addText(el.innerText, {
         x: 0.5, y: 0.5, w: 8.5, h: 1,
         fontSize: 26, bold: true, align: "center", color: "003366"
@@ -658,20 +665,20 @@ function exportToPPT() {
         fontSize: 10, color: "888888", align: "center"
       });
 
-      bulletCount = 0;
       slideIndex++;
     } else if (
       currentSlide &&
       (el.tagName === "P" || el.tagName === "LI" || el.classList.contains("key-point"))
     ) {
-      if (bulletCount < maxBullets) {
-        const yPos = bulletStartY + bulletCount * bulletSpacing;
-        currentSlide.addText(`• ${el.innerText}`, {
-          x: 1.0, y: yPos, w: 7.5,
-          fontSize: 18, color: "444444"
-        });
-        bulletCount++;
-      }
+      bullets.push(`• ${el.innerText.trim()}`);
+    }
+
+    // If it's the last element, flush bullets
+    if (idx === children.length - 1 && currentSlide && bullets.length > 0) {
+      currentSlide.addText(bullets.join("\n"), {
+        x: 1.0, y: 1.5, w: 7.5, h: 4.5,
+        fontSize: 18, color: "444444", lineSpacingMultiple: 1.2
+      });
     }
   });
 

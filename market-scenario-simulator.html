@@ -674,7 +674,11 @@ function exportToPPT() {
       currentSlide &&
       (el.tagName === "P" || el.tagName === "LI" || el.classList.contains("key-point"))
     ) {
-      bullets.push(`• ${el.innerText.trim()}`);
+      const text = el.innerText.trim();
+if (text && text !== "---") {
+  bullets.push(`• ${text}`);
+}
+
     }
 
     // Final flush

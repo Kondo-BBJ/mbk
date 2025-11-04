@@ -247,9 +247,9 @@
             html = html.replace(/(?<!\$)\$(?!\$)([^\s\$][^\$]*[^\s\$])(?<!\$)\$(?!\$)/g, (match, content) => {
                 let inlineFormula = content.trim();
                 
-                // Use the same cleanup for text commands and symbols
-                inlineFormula = inlineFormula.replace(/\\text\s*{([^}]+)}/g, '$1');
-                inlineFormula = inlineFormula.replace(/\\mathrm\s*{([^}]+)}/g, '$1');
+                // Refined cleanup for text commands and symbols, allowing optional whitespace before closing brace
+                inlineFormula = inlineFormula.replace(/\\text\s*{([^}]+)\s*}/g, '$1');
+                inlineFormula = inlineFormula.replace(/\\mathrm\s*{([^}]+)\s*}/g, '$1');
                 
                 // Replace common mathematical symbols with Unicode characters
                 inlineFormula = inlineFormula.replace(/\\times/g, '×');
@@ -271,9 +271,9 @@
                 let formula = content.trim();
 
                 // 1. Remove LaTeX text commands (\text{...} or \mathrm{...}) and keep content
-                // UPDATED: Added \s* to handle spaces after the command name (\text{ content } vs \text { content })
-                formula = formula.replace(/\\text\s*{([^}]+)}/g, '$1');
-                formula = formula.replace(/\\mathrm\s*{([^}]+)}/g, '$1');
+                // UPDATED: Refined regex to allow optional whitespace inside the closing brace {content }
+                formula = formula.replace(/\\text\s*{([^}]+)\s*}/g, '$1');
+                formula = formula.replace(/\\mathrm\s*{([^}]+)\s*}/g, '$1');
 
                 // 2. Replace common mathematical symbols with Unicode characters for better display
                 formula = formula.replace(/\\times/g, '×'); // Multiplication sign
@@ -447,6 +447,8 @@
                 2. Affected Key Price Drivers (Reference concepts like Freight, Exchange Rates, COT, etc.)
                 3. Risk Mitigation Strategy (Provide a high-level suggestion)
                 
+                When using the Crush Margin formula, please use the standard conversion factors based on the yield per bushel (e.g., 44 lbs of meal and 11 lbs of oil) and use clear variable names in your LaTeX.
+
                 The analysis must be grounded in the current information you search for. Maintain a professional, objective, and analytical tone.`;
 
                 const payload = {

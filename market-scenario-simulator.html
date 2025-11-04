@@ -86,7 +86,7 @@
             font-weight: 800;
             color: #1f2937;
         }
-        /* Styling for the LaTeX formula block */
+        /* Styling for the LaTeX formula block (Display Math) */
         .formula-block {
             background-color: #f3f4f6; /* Light gray background */
             padding: 1rem;
@@ -98,6 +98,13 @@
             overflow-x: auto;
             color: #4f46e5; /* Primary blue for prominence */
             font-weight: 600;
+        }
+        /* New style for inline math */
+        .inline-formula {
+            padding: 0 0.25rem;
+            background-color: #eef2ff; /* Indigo 50 */
+            border-radius: 0.25rem;
+            font-weight: 500;
         }
     </style>
     <!-- Load Inter Font -->
@@ -228,6 +235,24 @@
             // 1. Convert **bold** to <strong> and remove Windows carriage returns
             let html = markdownText.replace(/\r/g, '');
             html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'); 
+            
+            // --- NEW: Handle inline LaTeX math $...$ ---
+            // This captures content between single $ signs, ensuring it's not preceded/followed by a digit 
+            // (to avoid matching currency) and it's not the start of a $$ block.
+            html = html.replace(/(?<!\$)\$(?!\$)([^\s\$][^\$]*[^\s\$])(?<!\$)\$(?!\$)/g, (match, content) => {
+                let inlineFormula = content.trim();
+                
+                // Use the same cleanup for text commands and symbols
+                inlineFormula = inlineFormula.replace(/\\text\s*{([^}]+)}/g, '$1');
+                inlineFormula = inlineFormula.replace(/\\mathrm\s*{([^}]+)}/g, '$1');
+                inlineFormula = inlineFormula.replace(/\\times/g, '×');
+                inlineFormula = inlineFormula.replace(/\\div/g, '÷');
+                inlineFormula = inlineFormula.replace(/\\cdot/g, '•');
+
+                // Wrap in a simple inline span for styling
+                return `<span class="inline-formula font-mono text-primary-blue">${inlineFormula.trim()}</span>`;
+            });
+            // ------------------------------------------
 
             // --- FIX: Handle LaTeX Display Math $$...$$ by wrapping it in a styled block ---
             // The regex now correctly escapes the dollar signs (\$\$) and uses [\s\S]*? 
@@ -289,7 +314,7 @@
                 let isSeparator = line.match(/^\|[\s:-]*\|[\s:-]*\|/); // Markdown table separator
                 
                 // Check if the line is already a processed formula block
-                let isFormulaBlock = line.startsWith('<div class="formula-block">');
+                let isFormulaBlock = line.startsWith('<div class="formula-block">') || line.startsWith('<span class="inline-formula');
 
 
                 // Handle closing any open blocks first if the new line breaks the block type

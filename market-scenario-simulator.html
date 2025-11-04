@@ -623,16 +623,19 @@ function exportToPPT() {
   const pptx = new PptxGenJS();
 
   // Title Slide
-  const titleSlide = pptx.addSlide();
-  titleSlide.addText("BullBearJapan, Inc.", {
-    x: 0.5, y: 1, fontSize: 32, bold: true, align: "center", color: "003366"
-  });
-  titleSlide.addText("Scenario Analysis Report", {
-    x: 0.5, y: 2, fontSize: 24, align: "center", color: "444444"
-  });
-  titleSlide.addText(`Generated: ${new Date().toLocaleDateString()}`, {
-    x: 0.5, y: 3, fontSize: 14, align: "center", color: "888888"
-  });
+const titleSlide = pptx.addSlide();
+titleSlide.addText("BullBearJapan, Inc.", {
+  x: 0.5, y: 1.5, w: 9.0,
+  fontSize: 32, bold: true, align: "center", color: "003366"
+});
+titleSlide.addText("Scenario Analysis Report", {
+  x: 0.5, y: 2.5, w: 9.0,
+  fontSize: 24, align: "center", color: "444444"
+});
+titleSlide.addText(`Generated: ${new Date().toLocaleDateString()}`, {
+  x: 0.5, y: 3.5, w: 9.0,
+  fontSize: 14, align: "center", color: "888888"
+});
 
   const children = Array.from(container.children);
   let currentSlide = null;

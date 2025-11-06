@@ -273,7 +273,7 @@
         /**
          * Copies the user's prompt and the generated analysis report to the clipboard.
          */
-        function copyReport() {
+       function copyReport() {
   const promptText = document.getElementById('scenario-prompt').value.trim();
   const reportContentHTML = document.getElementById('analysis-text').innerHTML;
   const sourcesHTML = document.getElementById('sources-display').innerHTML;
@@ -282,14 +282,15 @@
 
   if (!reportContentHTML) return;
 
-  // Inject inline styles for <h5> tags to preserve purple color
-  const styledContent = reportContentHTML.replace(/<h5>(.*?)<\/h5>/g, 
+  // Inject inline styles ONLY into <h5> tags
+  const styledContent = reportContentHTML.replace(
+    /<h5>(.*?)<\/h5>/g,
     '<h5 style="color:#4f46e5; font-weight:700; font-size:1rem; margin-top:1rem; margin-bottom:0.5rem;">$1</h5>'
   );
 
   const fullHTML = `
     <div style="font-family: Inter, sans-serif; color: #1f2937;">
-      <h3 style="color: #4f46e5;">BullBearJapan, Inc. Scenario Analysis Report</h3>
+      <h3 style="color: #4f46e5; font-weight:700;">BullBearJapan, Inc. Scenario Analysis Report</h3>
       <p><strong>QUESTION:</strong> ${promptText}</p>
       <hr style="margin: 1rem 0;">
       ${styledContent}
@@ -316,6 +317,7 @@
     }, 3000);
   });
 }
+
 
 
         /**

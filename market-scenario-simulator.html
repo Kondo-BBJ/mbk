@@ -285,21 +285,20 @@
   // Inject inline styles ONLY into <h5> tags
   const styledContent = reportContentHTML.replace(
     /<h5>(.*?)<\/h5>/g,
-    '<h5 style="color:#4f46e5; font-weight:700; font-size:1rem; margin-top:1rem; margin-bottom:0.5rem;">$1</h5>'
+    '<h5 style="color:#4f46e5; font-weight:700; font-size:16px; margin-top:16px; margin-bottom:8px;">$1</h5>'
   );
 
- const fullHTML = `
-  <div style="font-family: Inter, sans-serif; color: #1f2937; line-height: 1.6;">
-    <h3 style="color: #4f46e5; font-weight: 700;">BullBearJapan, Inc. Scenario Analysis Report</h3>
-    <p><strong>QUESTION:</strong> ${promptText}</p>
-    <hr style="margin: 1rem 0;">
-    ${styledContent} <!-- Already has inline styles for <h5> -->
-    <hr style="margin: 1rem 0;">
-    ${sourcesHTML}
-    <p style="text-align: right; font-size: 0.75rem; color: #6b7280;">${reportDateText}</p>
-  </div>
-`;
-
+  const fullHTML = `
+    <div style="font-family:Segoe UI, sans-serif; color:#1f2937; line-height:1.6;">
+      <h3 style="color:#4f46e5; font-weight:700;">BullBearJapan, Inc. Scenario Analysis Report</h3>
+      <p><strong>QUESTION:</strong> ${promptText}</p>
+      <hr style="margin:16px 0;">
+      ${styledContent}
+      <hr style="margin:16px 0;">
+      ${sourcesHTML}
+      <p style="text-align:right; font-size:12px; color:#6b7280;">${reportDateText}</p>
+    </div>
+  `;
 
   navigator.clipboard.write([
     new ClipboardItem({
@@ -318,6 +317,7 @@
     }, 3000);
   });
 }
+
 
         /**
          * Converts basic Markdown (headings, bold, tables, lists, and symbols) to HTML.

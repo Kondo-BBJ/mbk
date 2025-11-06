@@ -282,20 +282,23 @@
 
   if (!reportContentHTML) return;
 
-  // Construct full HTML block
+  // Inject inline styles for <h5> tags to preserve purple color
+  const styledContent = reportContentHTML.replace(/<h5>(.*?)<\/h5>/g, 
+    '<h5 style="color:#4f46e5; font-weight:700; font-size:1rem; margin-top:1rem; margin-bottom:0.5rem;">$1</h5>'
+  );
+
   const fullHTML = `
     <div style="font-family: Inter, sans-serif; color: #1f2937;">
       <h3 style="color: #4f46e5;">BullBearJapan, Inc. Scenario Analysis Report</h3>
       <p><strong>QUESTION:</strong> ${promptText}</p>
       <hr style="margin: 1rem 0;">
-      ${reportContentHTML}
+      ${styledContent}
       <hr style="margin: 1rem 0;">
       ${sourcesHTML}
       <p style="text-align: right; font-size: 0.75rem; color: #6b7280;">${reportDateText}</p>
     </div>
   `;
 
-  // Use Clipboard API to copy HTML
   navigator.clipboard.write([
     new ClipboardItem({
       "text/html": new Blob([fullHTML], { type: "text/html" })

@@ -340,8 +340,7 @@
             // --------------------------------------------------------------------------
 
             // 2. Convert generic **bold** to <strong> and *italics* to <em>
-            html = html.replace(/(^|\s)\*\*(.+?)\*\*(?=\s|[.,;!?])/g, '$1<strong>$2</strong>');
-            html = html.replace(/\*(.*?)\*/g, '<em>$1</em>'); 
+html = html.replace(/(^|\s)\*\*(.+?)\*\*(?=\s|[.,;!?]|$)/g, '$1<strong>$2</strong>');
             
             // --- Handle inline LaTeX math $...$ ---
             html = html.replace(/(?<!\$)\$(?!\$)([^\s\$][^\$]*[^\s\$])(?<!\$)\$(?!\$)/g, (match, content) => {

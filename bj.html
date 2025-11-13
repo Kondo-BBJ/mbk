@@ -412,20 +412,16 @@
 
         // --- Local Storage Management ---
         const loadBankroll = () => {
-            const storedBankroll = localStorage.getItem('blackjackBankroll');
-            if (storedBankroll && !isNaN(parseInt(storedBankroll, 10))) {
-                bankroll = parseInt(storedBankroll, 10);
-            } else {
-                bankroll = DEFAULT_BANKROLL;
-                saveBankroll(bankroll);
-            }
-        };
-
-        const saveBankroll = (newBankroll) => {
-            bankroll = newBankroll;
-            localStorage.setItem('blackjackBankroll', bankroll);
-            bankrollEl.textContent = bankroll.toFixed(0);
-        };
+  const storedBankroll = localStorage.getItem('blackjackBankroll');
+  if (storedBankroll && !isNaN(parseInt(storedBankroll, 10))) {
+    bankroll = parseInt(storedBankroll, 10);
+  } else {
+    bankroll = DEFAULT_BANKROLL;
+    localStorage.setItem('blackjackBankroll', bankroll);
+  }
+  // ✅ Update the DOM immediately
+  bankrollEl.textContent = bankroll.toFixed(0);
+};
 
 
         // --- Core Game Logic ---

@@ -419,9 +419,13 @@
     bankroll = DEFAULT_BANKROLL;
     localStorage.setItem('blackjackBankroll', bankroll);
   }
-  // ✅ Update the DOM immediately
   bankrollEl.textContent = bankroll.toFixed(0);
+  betInputEl.max = bankroll;
+  if (parseInt(betInputEl.value) > bankroll) {
+    betInputEl.value = bankroll;
+  }
 };
+
 
 
         // --- Core Game Logic ---
@@ -824,30 +828,49 @@
         };
 
         // --- Event Listeners and Initialization ---
-        document.addEventListener('DOMContentLoaded', () => {
-            loadBankroll(); 
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Load bankroll and update display
+    const storedBankroll = localStorage.getItem('blackjackBankroll');
+    if (storedBankroll && !isNaN(parseInt(storedBankroll, 10))) {
+        bankroll = parseInt(storedBankroll, 10);
+    } else {
+        bankroll = DEFAULT_BANKROLL;
+        localStorage.setItem('blackjackBankroll', bankroll);
+    }
+    bankrollEl.textContent = bankroll.toFixed(0);
 
-            betInputEl.addEventListener('input', () => {
-                let bet = parseInt(betInputEl.value);
-                if (isNaN(bet) || bet < 1) bet = 1;
-                if (bet > bankroll) bet = bankroll;
-                betInputEl.value = bet;
-                initialBet = bet;
-            });
+    // 2. Set bet input max and value
+    betInputEl.max = bankroll;
+    if (parseInt(betInputEl.value) > bankroll) {
+        betInputEl.value = bankroll;
+    }
 
-            dealBtn.addEventListener('click', startGame);
-            hitBtn.addEventListener('click', hit);
-            standBtn.addEventListener('click', stand);
-            doubleBtn.addEventListener('click', doubleDown);
-            splitBtn.addEventListener('click', split);
+    // 3. Bet input listener
+    betInputEl.addEventListener('input', () => {
+        let bet = parseInt(betInputEl.value);
+        if (isNaN(bet) || bet < 1) bet = 1;
+        if (bet > bankroll) bet = bankroll;
+        betInputEl.value = bet;
+        initialBet = bet;
+    });
 
-            // Initial UI setup
-            statusMessageEl.textContent = "Place your bet and click Deal!";
-            updateUI();
-            setControls(false);
-            dealBtn.disabled = false;
-            dealBtn.classList.remove('disabled');
-        });
+    // 4. Button listeners
+    dealBtn.addEventListener('click', startGame);
+    hitBtn.addEventListener('click', hit);
+    standBtn.addEventListener('click', stand);
+    doubleBtn.addEventListener('click', doubleDown);
+    splitBtn.addEventListener('click', split);
+
+    // 5. Initial UI setup
+    statusMessageEl.textContent = "Place your bet and click Deal!";
+    updateUI();
+    setControls(false);
+
+    // 6. Enable Deal button
+    dealBtn.disabled = false;
+    dealBtn.classList.remove('disabled');
+});
+
     </script>
 </body>
 </html>

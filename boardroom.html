@@ -49,7 +49,7 @@
             padding: 0.75rem; 
         }
 
-        /* FIX: Ensure the hidden textarea has non-zero dimensions for successful selection and copy */
+        /* Hidden textarea for copy mechanism */
         #tempTextAreaForCopy {
             position: absolute;
             left: -9999px;
@@ -168,25 +168,18 @@
             </div>
         </div>
         
-        <!-- Export Controls Section: Now features Copy and Download buttons -->
+        <!-- Export Controls Section -->
         <div id="exportControlsSection" class="section-card hidden flex justify-center">
             <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
-                
-                <!-- 1. Copy to Clipboard Button -->
-                <button id="copyToClipboardBtn" class="flex items-center justify-center px-8 py-3 text-base font-semibold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition focus:ring-2 focus:ring-indigo-400 shadow-lg" title="Copy the complete structured document (metadata + content) to your clipboard.">
+                <!-- Single Export Button as requested -->
+                <button id="exportDocumentBtn" class="flex items-center justify-center px-8 py-3 text-base font-semibold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition focus:ring-2 focus:ring-indigo-400 shadow-lg" title="Copy the complete structured document (metadata + content) to your clipboard for easy pasting into reports.">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
-                    Copy to Clipboard
-                </button>
-                
-                <!-- 2. Download Document Button -->
-                <button id="downloadDocumentBtn" class="flex items-center justify-center px-8 py-3 text-base font-semibold text-indigo-700 bg-indigo-100 border border-indigo-200 rounded-xl hover:bg-indigo-200 transition focus:ring-2 focus:ring-indigo-400 shadow-lg" title="Download the complete structured document as a plain text file (.txt).">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                    Download Document
+                    Export Document
                 </button>
             </div>
         </div>
         
-        <!-- Hidden elements for functionality -->
+        <!-- Hidden textarea for functionality -->
         <textarea id="tempTextAreaForCopy" rows="1"></textarea>
 
         <!-- Error/Message Box -->
@@ -195,24 +188,11 @@
     </div>
 
     <script type="module">
-
         // --- API & Utility Constants ---
-  const API_URL = 'https://gemini-proxy-80hv.onrender.com/gemini';
-
-  // --- Function to send prompt to proxy ---
-  async function sendPrompt(prompt) {
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt })
-    });
-
-    const data = await response.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "No response";
-    return text;
-  }
+        // Using the proxy URL provided by the user
+        const API_URL = 'https://gemini-proxy-80hv.onrender.com/gemini';
         
-        // --- Escaping Utility for Template Literals (Fixes SyntaxError) ---
+        // --- Escaping Utility for Template Literals ---
         function escapeHtml(str) {
             if (typeof str !== 'string') return '';
             return str.replace(/&/g, '&amp;')
@@ -295,10 +275,8 @@
         const exportControlsSection = document.getElementById('exportControlsSection');
         const tempTextAreaForCopy = document.getElementById('tempTextAreaForCopy');
         
-        // Export Buttons
-        const copyToClipboardBtn = document.getElementById('copyToClipboardBtn');
-        const downloadDocumentBtn = document.getElementById('downloadDocumentBtn');
-
+        // Export Button
+        const exportDocumentBtn = document.getElementById('exportDocumentBtn');
 
         let documents = {};
         let currentTab = 'script'; // Default to script
@@ -421,9 +399,8 @@
             // Set default date
             document.getElementById('meetingDate').value = getTodayDateString();
 
-            // --- EXPORT LISTENERS ---
-            copyToClipboardBtn.addEventListener('click', handleCopy);
-            downloadDocumentBtn.addEventListener('click', handleDownload);
+            // --- EXPORT LISTENER ---
+            exportDocumentBtn.addEventListener('click', handleCopy);
         }
 
         function renderDocument(tabName) {
@@ -457,16 +434,12 @@
                     }).join('')}
                 </div>`;
             } else if (tabName === 'minutes') {
-                // Markdown content for minutes
-                // NOTE: We use marked.parse for rendering to the screen
                 tabContent.innerHTML = `<div id="export-target-minutes" class="whitespace-pre-wrap prose max-w-none">${marked.parse(docData)}</div>`;
             } else if (tabName === 'decisions') {
-                // List of decisions
                 tabContent.innerHTML = `<ul id="export-target-decisions" class="list-disc pl-5 space-y-2">
                     ${docData.map(d => `<li class="p-2 bg-white rounded-md shadow-sm border border-gray-100">${escapeHtml(d)}</li>`).join('')}
                 </ul>`;
             } else if (tabName === 'actionplan') {
-                // Action plan table
                 tabContent.innerHTML = `
                     <div id="export-target-actionplan" class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
@@ -534,21 +507,17 @@
             if (tabName === 'script') {
                 content = docData.map(turn => `${turn.speaker}:\n  ${turn.dialogue}`).join('\n\n');
             } else if (tabName === 'minutes') {
-                // Markdown content is copied as-is, which is structured and readable.
                 content = docData; 
             } else if (tabName === 'decisions') {
                 content = docData.map((d, i) => `${i + 1}. ${d}`).join('\n');
             } else if (tabName === 'actionplan') {
-                // Convert structured array data into a readable plain-text markdown table format
                 const headers = ['Action Item', 'Owner', 'Deadline'];
                 const maxTaskLength = docData.reduce((max, item) => Math.max(max, item.task.length), headers[0].length);
                 const maxOwnerLength = docData.reduce((max, item) => Math.max(max, item.owner.length), headers[1].length);
                 const maxDeadlineLength = docData.reduce((max, item) => Math.max(max, item.deadline.length), headers[2].length);
 
-                // Helper to pad strings for ASCII table
                 const pad = (str, len) => str.padEnd(len, ' ');
 
-                // Table structure
                 let tableText = `| ${pad(headers[0], maxTaskLength)} | ${pad(headers[1], maxOwnerLength)} | ${pad(headers[2], maxDeadlineLength)} |\n`;
                 tableText += `|${'-'.repeat(maxTaskLength + 2)}|${'-'.repeat(maxOwnerLength + 2)}|${'-'.repeat(maxDeadlineLength + 2)}|`;
                 
@@ -610,32 +579,6 @@
             } else {
                 showMessage('Failed to copy. Clipboard access may be blocked by your browser.', 'error');
             }
-        }
-
-        /**
-         * Handles downloading the document content as a .txt file.
-         */
-        function handleDownload() {
-            const finalPlainText = getCompleteDocumentContent();
-            if (!finalPlainText) return;
-
-            const metadata = getMeetingMetadata();
-            // Clean up the title for a safe filename
-            const filenameTitle = metadata.title.replace(/[^a-z0-9]/gi, '_').toLowerCase().substring(0, 30);
-            const filename = `${filenameTitle}_${currentTab}_${metadata.date}.txt`;
-
-            const blob = new Blob([finalPlainText], { type: 'text/plain;charset=utf-8' });
-            const link = document.createElement('a');
-            
-            // Create a temporary object URL and trigger the download
-            link.href = URL.createObjectURL(blob);
-            link.download = filename;
-            
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            showMessage('Document download initiated.', 'success');
         }
 
 
@@ -724,10 +667,10 @@ The output MUST be a JSON object conforming strictly to the provided schema. Do 
                 },
                 required: ["discussionScript", "meetingMinutes", "keyDecisions", "actionPlan"]
             };
-
-            const payload = {
-                contents: [{ parts: [{ text: userQuery }] }],
-                systemInstruction: { parts: [{ text: systemPrompt }] },
+            
+            // CONSTRUCT THE PROXY PAYLOAD
+            const proxyPayload = {
+                prompt: `System Prompt: ${systemPrompt}\n\nUser Query: ${userQuery}`,
                 generationConfig: {
                     responseMimeType: "application/json",
                     responseSchema: responseSchema
@@ -737,14 +680,12 @@ The output MUST be a JSON object conforming strictly to the provided schema. Do 
             try {
                 let response;
                 let maxRetries = 3;
-                const apiKey = "";
-                const apiUrlWithKey = `${API_URL}${apiKey}`;
-
+                
                 for (let i = 0; i < maxRetries; i++) {
-                    response = await fetch(apiUrlWithKey, {
+                    response = await fetch(API_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
+                        body: JSON.stringify(proxyPayload)
                     });
 
                     if (response.ok) break; 
@@ -763,17 +704,21 @@ The output MUST be a JSON object conforming strictly to the provided schema. Do 
                 }
 
                 const result = await response.json();
-                const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
-
-                if (!jsonText) {
-                    throw new Error("No content received from the model.");
-                }
-
+                
                 let parsedDocuments;
                 try {
-                    parsedDocuments = JSON.parse(jsonText);
+                    // Handle potential differences in proxy response structure
+                    const contentText = result.candidates?.[0]?.content?.parts?.[0]?.text || (typeof result === 'string' ? result : JSON.stringify(result));
+                    
+                    // Sometimes proxies return the JSON object directly if they parse it, so check type
+                    if (typeof result === 'object' && result.discussionScript) {
+                        parsedDocuments = result;
+                    } else {
+                        parsedDocuments = JSON.parse(contentText);
+                    }
+
                 } catch (e) {
-                    console.error("Failed to parse JSON response:", jsonText);
+                    console.error("Failed to parse JSON response:", result);
                     throw new Error("The model returned malformed JSON. Please try again.");
                 }
 
@@ -808,6 +753,3 @@ The output MUST be a JSON object conforming strictly to the provided schema. Do 
     </script>
 </body>
 </html>
-
-
-

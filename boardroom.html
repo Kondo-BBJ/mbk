@@ -434,12 +434,16 @@
                     }).join('')}
                 </div>`;
             } else if (tabName === 'minutes') {
+                // Markdown content for minutes
+                // NOTE: We use marked.parse for rendering to the screen
                 tabContent.innerHTML = `<div id="export-target-minutes" class="whitespace-pre-wrap prose max-w-none">${marked.parse(docData)}</div>`;
             } else if (tabName === 'decisions') {
+                // List of decisions
                 tabContent.innerHTML = `<ul id="export-target-decisions" class="list-disc pl-5 space-y-2">
                     ${docData.map(d => `<li class="p-2 bg-white rounded-md shadow-sm border border-gray-100">${escapeHtml(d)}</li>`).join('')}
                 </ul>`;
             } else if (tabName === 'actionplan') {
+                // Action plan table
                 tabContent.innerHTML = `
                     <div id="export-target-actionplan" class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
@@ -627,6 +631,8 @@ The output MUST be a JSON object conforming strictly to the provided schema. Do 
                 Agenda: ${agenda}
             `;
 
+            // CONSTRUCT THE PROXY PAYLOAD
+            // The JSON schema is defined here to be passed in the prompt or config depending on proxy requirements
             const responseSchema = {
                 type: "OBJECT",
                 properties: {
@@ -667,8 +673,7 @@ The output MUST be a JSON object conforming strictly to the provided schema. Do 
                 },
                 required: ["discussionScript", "meetingMinutes", "keyDecisions", "actionPlan"]
             };
-            
-            // CONSTRUCT THE PROXY PAYLOAD
+
             const proxyPayload = {
                 prompt: `System Prompt: ${systemPrompt}\n\nUser Query: ${userQuery}`,
                 generationConfig: {
@@ -708,17 +713,21 @@ The output MUST be a JSON object conforming strictly to the provided schema. Do 
                 let parsedDocuments;
                 try {
                     // Handle potential differences in proxy response structure
-                    const contentText = result.candidates?.[0]?.content?.parts?.[0]?.text || (typeof result === 'string' ? result : JSON.stringify(result));
+                    // Extract text content from common Gemini response structures or use direct result
+                    const contentText = result.candidates?.[0]?.content?.parts?.[0]?.text || 
+                                      result.text || 
+                                      (typeof result === 'string' ? result : JSON.stringify(result));
                     
-                    // Sometimes proxies return the JSON object directly if they parse it, so check type
-                    if (typeof result === 'object' && result.discussionScript) {
-                        parsedDocuments = result;
-                    } else {
-                        parsedDocuments = JSON.parse(contentText);
-                    }
+                    // Sanitize the content text to ensure it's valid JSON
+                    // Sometimes models wrap JSON in markdown blocks like ```json ... ```
+                    const cleanJsonText = contentText.replace(/```json\n?|\n?```/g, '').trim();
+
+                    parsedDocuments = JSON.parse(cleanJsonText);
 
                 } catch (e) {
                     console.error("Failed to parse JSON response:", result);
+                    // Provide a more descriptive error to the user
+                    showMessage("Error: The model returned malformed JSON. This can happen with complex prompts. Please try simplifying the agenda or try again.", 'error');
                     throw new Error("The model returned malformed JSON. Please try again.");
                 }
 

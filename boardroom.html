@@ -142,40 +142,46 @@
 
         <!-- Simulation Control Section -->
         <div class="section-card flex justify-center">
-            <button id="runMeetingBtn" class="btn-primary text-white font-semibold py-3 px-8 rounded-xl text-lg shadow-lg hover:shadow-xl transition flex items-center justify-center">
+            <button id="runMeetingBtn" class="btn-primary w-full md:w-auto px-8 py-3 rounded-xl text-white text-lg font-semibold flex items-center justify-center shadow-lg hover:shadow-xl disabled:bg-gray-400">
+                <div id="loadingIndicator" class="hidden w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
                 <span id="buttonText">Run Simulated Board Meeting & Generate Documents</span>
-                <div id="loadingIndicator" class="hidden h-5 w-5 border-2 border-white border-solid rounded-full loader ml-3"></div>
             </button>
         </div>
 
-        <!-- Results Section (Tabs) -->
+        <!-- Results Section (Initially Hidden) -->
         <div id="resultsSection" class="section-card hidden">
-            <div class="flex justify-between items-center mb-4 border-b pb-2">
-                <h2 class="text-2xl font-bold text-gray-800">2. Meeting Output Documents</h2>
-            </div>
-            
-            <!-- Tabs for documents -->
-            <div class="flex border-b border-gray-200 overflow-x-auto whitespace-nowrap">
-                <button class="tab-btn px-4 py-2 text-sm font-medium text-gray-600 border-b-2 border-transparent hover:border-emerald-500 data-[active='true']:border-emerald-500 data-[active='true']:text-emerald-600" data-tab="script">Discussion Script</button>
-                <button class="tab-btn px-4 py-2 text-sm font-medium text-gray-600 border-b-2 border-transparent hover:border-emerald-500 data-[active='true']:border-emerald-500 data-[active='true']:text-emerald-600" data-tab="minutes">Meeting Minutes</button>
-                <button class="tab-btn px-4 py-2 text-sm font-medium text-gray-600 border-b-2 border-transparent hover:border-emerald-500 data-[active='true']:border-emerald-500 data-[active='true']:text-emerald-600" data-tab="decisions">Key Decisions</button>
-                <button class="tab-btn px-4 py-2 text-sm font-medium text-gray-600 border-b-2 border-transparent hover:border-emerald-500 data-[active='true']:border-emerald-500 data-[active='true']:text-emerald-600" data-tab="actionplan">Action Plan</button>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">2. Generated Documents</h2>
+
+            <!-- Document Selection Tabs -->
+            <div class="flex border-b border-gray-200 mb-4">
+                <button data-doc="script" class="doc-tab px-4 py-2 text-sm font-medium text-gray-600 border-b-2 border-transparent hover:border-emerald-500 hover:text-emerald-500 transition duration-150 mr-2">Discussion Script</button>
+                <button data-doc="minutes" class="doc-tab px-4 py-2 text-sm font-medium text-gray-600 border-b-2 border-transparent hover:border-emerald-500 hover:text-emerald-500 transition duration-150 mr-2">Meeting Minutes</button>
+                <button data-doc="decisions" class="doc-tab px-4 py-2 text-sm font-medium text-gray-600 border-b-2 border-transparent hover:border-emerald-500 hover:text-emerald-500 transition duration-150 mr-2">Key Decisions</button>
+                <button data-doc="actionplan" class="doc-tab px-4 py-2 text-sm font-medium text-gray-600 border-b-2 border-transparent hover:border-emerald-500 hover:text-emerald-500 transition duration-150">Action Plan</button>
             </div>
 
-            <!-- Tab Content -->
-            <div id="tabContent" class="mt-4 p-4 bg-gray-50 rounded-lg min-h-[300px] text-sm leading-relaxed text-gray-800">
-                 <!-- Content is injected here -->
+            <!-- Document Output Area -->
+            <div id="documentOutput" class="p-4 bg-gray-50 border border-gray-200 rounded-lg overflow-y-auto text-sm">
+                <!-- Content will be rendered here -->
             </div>
         </div>
-        
-        <!-- Export Controls Section -->
+
+        <!-- Export Controls (Initially Hidden) -->
         <div id="exportControlsSection" class="section-card hidden flex justify-center">
             <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
-                <!-- Single Export Button as requested -->
-                <button id="exportDocumentBtn" class="flex items-center justify-center px-8 py-3 text-base font-semibold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition focus:ring-2 focus:ring-indigo-400 shadow-lg" title="Copy the complete structured document (metadata + content) to your clipboard for easy pasting into reports.">
+                
+                <!-- Copy Button -->
+                <button id="copyDocBtn" class="flex items-center justify-center px-6 py-3 text-base font-semibold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition focus:ring-2 focus:ring-indigo-400 shadow-lg" title="Copy text of current tab with meeting metadata">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
-                    Export Document
+                    Copy to Clipboard
                 </button>
+                
+                <!-- Download Button -->
+                <button id="downloadDocBtn" class="flex items-center justify-center px-6 py-3 text-base font-semibold text-white bg-green-600 rounded-xl hover:bg-green-700 transition focus:ring-2 focus:ring-green-400 shadow-lg" title="Download current tab as a text file">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    Download Document
+                </button>
+
             </div>
         </div>
         
@@ -188,7 +194,7 @@
     </div>
 
     <script type="module">
-        // --- API & Utility Constants ---
+        // --- API Configuration ---
         // Using the proxy URL provided by the user
         const API_URL = 'https://gemini-proxy-80hv.onrender.com/gemini';
         
@@ -270,13 +276,16 @@
         const loadingIndicator = document.getElementById('loadingIndicator');
         const buttonText = document.getElementById('buttonText');
         const resultsSection = document.getElementById('resultsSection');
-        const tabContent = document.getElementById('tabContent');
         const messageBox = document.getElementById('messageBox');
         const exportControlsSection = document.getElementById('exportControlsSection');
-        const tempTextAreaForCopy = document.getElementById('tempTextAreaForCopy');
+        const documentOutput = document.getElementById('documentOutput');
+        const docTabs = document.querySelectorAll('.doc-tab');
         
-        // Export Button
-        const exportDocumentBtn = document.getElementById('exportDocumentBtn');
+        // Export Buttons
+        const copyDocBtn = document.getElementById('copyDocBtn');
+        const downloadDocBtn = document.getElementById('downloadDocBtn');
+        const tempTextAreaForCopy = document.getElementById('tempTextAreaForCopy');
+
 
         let documents = {};
         let currentTab = 'script'; // Default to script
@@ -392,32 +401,37 @@
             addParticipantBtn.onclick = () => createParticipantRow(Date.now(), '— Analysts (Investment/Research)', '');
             runMeetingBtn.addEventListener('click', runMeetingSimulation);
 
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.addEventListener('click', () => renderDocument(btn.getAttribute('data-tab')));
+            document.querySelectorAll('.doc-tab').forEach(btn => {
+                btn.addEventListener('click', () => renderDocument(btn.getAttribute('data-doc')));
             });
 
             // Set default date
             document.getElementById('meetingDate').value = getTodayDateString();
 
-            // --- EXPORT LISTENER ---
-            exportDocumentBtn.addEventListener('click', handleCopy);
+            // --- EXPORT LISTENERS ---
+            copyDocBtn.addEventListener('click', handleCopy);
+            downloadDocBtn.addEventListener('click', handleDownload);
         }
 
         function renderDocument(tabName) {
             currentTab = tabName;
             const docData = documents[tabName];
             
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.setAttribute('data-active', btn.getAttribute('data-tab') === tabName);
+            document.querySelectorAll('.doc-tab').forEach(btn => {
+                const isActive = btn.getAttribute('data-doc') === tabName;
+                btn.classList.toggle('border-emerald-500', isActive);
+                btn.classList.toggle('text-emerald-500', isActive);
+                btn.classList.toggle('border-transparent', !isActive);
+                btn.classList.toggle('text-gray-600', !isActive);
             });
 
             if (!docData) {
-                tabContent.innerHTML = '<p class="text-center text-gray-500 py-10">No content available for this tab yet. Run the simulation first.</p>';
+                documentOutput.innerHTML = '<p class="text-center text-gray-500 py-10">No content available for this tab yet. Run the simulation first.</p>';
                 return;
             }
 
             if (tabName === 'script') {
-                tabContent.innerHTML = `<div id="export-target-script" class="space-y-2 overflow-y-auto p-2">
+                documentOutput.innerHTML = `<div id="export-target-script" class="space-y-2 overflow-y-auto p-2">
                     ${docData.map((turn) => {
                         const speakerParts = turn.speaker.split('(');
                         const speakerName = speakerParts[0].trim();
@@ -434,17 +448,13 @@
                     }).join('')}
                 </div>`;
             } else if (tabName === 'minutes') {
-                // Markdown content for minutes
-                // NOTE: We use marked.parse for rendering to the screen
-                tabContent.innerHTML = `<div id="export-target-minutes" class="whitespace-pre-wrap prose max-w-none">${marked.parse(docData)}</div>`;
+                documentOutput.innerHTML = `<div id="export-target-minutes" class="whitespace-pre-wrap prose max-w-none">${marked.parse(docData)}</div>`;
             } else if (tabName === 'decisions') {
-                // List of decisions
-                tabContent.innerHTML = `<ul id="export-target-decisions" class="list-disc pl-5 space-y-2">
+                documentOutput.innerHTML = `<ul id="export-target-decisions" class="list-disc pl-5 space-y-2">
                     ${docData.map(d => `<li class="p-2 bg-white rounded-md shadow-sm border border-gray-100">${escapeHtml(d)}</li>`).join('')}
                 </ul>`;
             } else if (tabName === 'actionplan') {
-                // Action plan table
-                tabContent.innerHTML = `
+                documentOutput.innerHTML = `
                     <div id="export-target-actionplan" class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-emerald-100">
@@ -473,9 +483,8 @@
 
         function getMeetingMetadata() {
             const participants = getParticipantsData();
-            const participantList = participants.map(p => 
-                `${p.name} (${p.role.split('(')[0].trim()})`
-            ).join('; ');
+            // Just use a simple list of names for metadata
+            const participantList = participants.map(p => p.name).join(', ');
 
             return {
                 date: document.getElementById('meetingDate').value,
@@ -516,17 +525,27 @@
                 content = docData.map((d, i) => `${i + 1}. ${d}`).join('\n');
             } else if (tabName === 'actionplan') {
                 const headers = ['Action Item', 'Owner', 'Deadline'];
-                const maxTaskLength = docData.reduce((max, item) => Math.max(max, item.task.length), headers[0].length);
-                const maxOwnerLength = docData.reduce((max, item) => Math.max(max, item.owner.length), headers[1].length);
-                const maxDeadlineLength = docData.reduce((max, item) => Math.max(max, item.deadline.length), headers[2].length);
-
-                const pad = (str, len) => str.padEnd(len, ' ');
-
-                let tableText = `| ${pad(headers[0], maxTaskLength)} | ${pad(headers[1], maxOwnerLength)} | ${pad(headers[2], maxDeadlineLength)} |\n`;
-                tableText += `|${'-'.repeat(maxTaskLength + 2)}|${'-'.repeat(maxOwnerLength + 2)}|${'-'.repeat(maxDeadlineLength + 2)}|`;
+                
+                // Calculate column widths
+                const colWidths = [headers[0].length, headers[1].length, headers[2].length];
                 
                 docData.forEach(item => {
-                    tableText += `\n| ${pad(item.task, maxTaskLength)} | ${pad(item.owner, maxOwnerLength)} | ${pad(item.deadline, maxDeadlineLength)} |`;
+                    colWidths[0] = Math.max(colWidths[0], item.task.length);
+                    colWidths[1] = Math.max(colWidths[1], item.owner.length);
+                    colWidths[2] = Math.max(colWidths[2], item.deadline.length);
+                });
+                
+                // Add padding
+                const pad = (str, len) => str.padEnd(len, ' ');
+                
+                // Header
+                let tableText = `| ${pad(headers[0], colWidths[0])} | ${pad(headers[1], colWidths[1])} | ${pad(headers[2], colWidths[2])} |\n`;
+                // Separator
+                tableText += `|${'-'.repeat(colWidths[0] + 2)}|${'-'.repeat(colWidths[1] + 2)}|${'-'.repeat(colWidths[2] + 2)}|\n`;
+                
+                // Rows
+                docData.forEach(item => {
+                    tableText += `| ${pad(item.task, colWidths[0])} | ${pad(item.owner, colWidths[1])} | ${pad(item.deadline, colWidths[2])} |\n`;
                 });
                 
                 content = tableText;
@@ -537,7 +556,6 @@
 
         /**
          * Generates the complete plain text content for the currently active document tab.
-         * @returns {string|null} The combined text content or null if no data is available.
          */
         function getCompleteDocumentContent() {
             if (!documents[currentTab]) {
@@ -575,7 +593,7 @@
                 console.error('Copy failed with execCommand:', err);
             }
             
-            // Clean up by removing the selection
+            // Clean up by removing the selection - do NOT remove textarea from DOM
             window.getSelection().removeAllRanges();
 
             if (successful) {
@@ -583,6 +601,33 @@
             } else {
                 showMessage('Failed to copy. Clipboard access may be blocked by your browser.', 'error');
             }
+        }
+        
+        /**
+         * Handles downloading the document content as a text file.
+         */
+        function handleDownload() {
+             const finalPlainText = getCompleteDocumentContent();
+             if (!finalPlainText) return;
+             
+             const metadata = getMeetingMetadata();
+             // Create a safe filename
+             const safeTitle = metadata.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+             const filename = `${safeTitle}_${currentTab}_${metadata.date}.txt`;
+             
+             // Create a Blob and trigger download
+             const blob = new Blob([finalPlainText], { type: 'text/plain' });
+             const url = URL.createObjectURL(blob);
+             
+             const a = document.createElement('a');
+             a.href = url;
+             a.download = filename;
+             document.body.appendChild(a);
+             a.click();
+             
+             // Cleanup
+             document.body.removeChild(a);
+             URL.revokeObjectURL(url);
         }
 
 
@@ -602,7 +647,7 @@
             loadingIndicator.classList.remove('hidden');
             resultsSection.classList.add('hidden');
             exportControlsSection.classList.add('hidden'); 
-            tabContent.innerHTML = '<p class="text-center text-gray-500 py-10">Simulation in progress...</p>';
+            documentOutput.innerHTML = '<p class="text-center text-gray-500 py-10">Simulation in progress...</p>';
 
 
             const participantList = participants.map(p => 
@@ -631,8 +676,6 @@ The output MUST be a JSON object conforming strictly to the provided schema. Do 
                 Agenda: ${agenda}
             `;
 
-            // CONSTRUCT THE PROXY PAYLOAD
-            // The JSON schema is defined here to be passed in the prompt or config depending on proxy requirements
             const responseSchema = {
                 type: "OBJECT",
                 properties: {
@@ -673,7 +716,8 @@ The output MUST be a JSON object conforming strictly to the provided schema. Do 
                 },
                 required: ["discussionScript", "meetingMinutes", "keyDecisions", "actionPlan"]
             };
-
+            
+            // CONSTRUCT THE PROXY PAYLOAD
             const proxyPayload = {
                 prompt: `System Prompt: ${systemPrompt}\n\nUser Query: ${userQuery}`,
                 generationConfig: {
@@ -712,21 +756,16 @@ The output MUST be a JSON object conforming strictly to the provided schema. Do 
                 
                 let parsedDocuments;
                 try {
-                    // Handle potential differences in proxy response structure
-                    // Extract text content from common Gemini response structures or use direct result
                     const contentText = result.candidates?.[0]?.content?.parts?.[0]?.text || 
                                       result.text || 
                                       (typeof result === 'string' ? result : JSON.stringify(result));
                     
-                    // Sanitize the content text to ensure it's valid JSON
-                    // Sometimes models wrap JSON in markdown blocks like ```json ... ```
                     const cleanJsonText = contentText.replace(/```json\n?|\n?```/g, '').trim();
 
                     parsedDocuments = JSON.parse(cleanJsonText);
 
                 } catch (e) {
                     console.error("Failed to parse JSON response:", result);
-                    // Provide a more descriptive error to the user
                     showMessage("Error: The model returned malformed JSON. This can happen with complex prompts. Please try simplifying the agenda or try again.", 'error');
                     throw new Error("The model returned malformed JSON. Please try again.");
                 }

@@ -419,70 +419,74 @@
         }
 
         function renderDocument(tabName) {
-            currentTab = tabName;
-            const docData = documents[tabName];
-            
-            document.querySelectorAll('.doc-tab').forEach(btn => {
-                const isActive = btn.getAttribute('data-doc') === tabName;
-                btn.classList.toggle('border-emerald-500', isActive);
-                btn.classList.toggle('text-emerald-500', isActive);
-                btn.classList.toggle('border-transparent', !isActive);
-                btn.classList.toggle('text-gray-600', !isActive);
-            });
+  currentTab = tabName;
+  const docData = documents[tabName];
 
-            if (!docData) {
-                documentOutput.innerHTML = '<p class="text-center text-gray-500 py-10">No content available for this tab yet. Run the simulation first.</p>';
-                return;
-            }
+  document.querySelectorAll('.doc-tab').forEach(btn => {
+    const isActive = btn.getAttribute('data-doc') === tabName;
+    btn.classList.toggle('border-emerald-500', isActive);
+    btn.classList.toggle('text-emerald-500', isActive);
+    btn.classList.toggle('border-transparent', !isActive);
+    btn.classList.toggle('text-gray-600', !isActive);
+  });
 
-            if (tabName === 'script') {
-                documentOutput.innerHTML = `<div id="export-target-script" class="space-y-2 overflow-y-auto p-2">
-                    ${docData.map((turn) => {
-                        const speakerParts = turn.speaker.split('(');
-                        const speakerName = speakerParts[0].trim();
-                        const speakerRole = speakerParts.length > 1 ? `(${speakerParts[1]}` : '';
-                        const { bg, text } = stringToColor(speakerName);
-                        const escapedDialogue = escapeHtml(turn.dialogue);
+  // Guard against null, undefined, empty string, or empty array
+  if (!docData || 
+      (Array.isArray(docData) && docData.length === 0) || 
+      (typeof docData === 'string' && docData.trim() === "")) {
+    documentOutput.innerHTML = '<p class="text-center text-gray-500 py-10">⚠️ No content generated yet. Try rerunning the simulation.</p>';
+    return;
+  }
 
-                        return `
-                        <div class="discussion-turn rounded-lg shadow-md border transition-all duration-100" style="background-color: ${bg}; border-color: ${text}33;">
-                            <strong class="font-bold text-lg" style="color: ${text};">${escapeHtml(speakerName)}</strong>
-                            <span class="text-sm text-gray-500">${escapeHtml(speakerRole)}</span>:
-                            <p class="mt-1" style="color: ${text};">${escapedDialogue}</p>
-                        </div>`;
-                    }).join('')}
-                </div>`;
-            } else if (tabName === 'minutes') {
-                documentOutput.innerHTML = `<div id="export-target-minutes" class="whitespace-pre-wrap prose max-w-none">${marked.parse(docData)}</div>`;
-            } else if (tabName === 'decisions') {
-                documentOutput.innerHTML = `<ul id="export-target-decisions" class="list-disc pl-5 space-y-2">
-                    ${docData.map(d => `<li class="p-2 bg-white rounded-md shadow-sm border border-gray-100">${escapeHtml(d)}</li>`).join('')}
-                </ul>`;
-            } else if (tabName === 'actionplan') {
-                documentOutput.innerHTML = `
-                    <div id="export-target-actionplan" class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-emerald-100">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Action Item</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Owner</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Deadline</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                ${docData.map(item => `
-                                    <tr>
-                                        <td class="px-6 py-4 whitespace-normal text-sm text-gray-900">${escapeHtml(item.task)}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-medium">${escapeHtml(item.owner)}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${escapeHtml(item.deadline)}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                `;
-            }
-        }
+  if (tabName === 'script') {
+    documentOutput.innerHTML = `<div id="export-target-script" class="space-y-2 overflow-y-auto p-2">
+      ${docData.map((turn) => {
+        const speakerParts = turn.speaker.split('(');
+        const speakerName = speakerParts[0].trim();
+        const speakerRole = speakerParts.length > 1 ? `(${speakerParts[1]}` : '';
+        const { bg, text } = stringToColor(speakerName);
+        const escapedDialogue = escapeHtml(turn.dialogue);
+
+        return `
+          <div class="discussion-turn rounded-lg shadow-md border transition-all duration-100" style="background-color: ${bg}; border-color: ${text}33;">
+            <strong class="font-bold text-lg" style="color: ${text};">${escapeHtml(speakerName)}</strong>
+            <span class="text-sm text-gray-500">${escapeHtml(speakerRole)}</span>:
+            <p class="mt-1" style="color: ${text};">${escapedDialogue}</p>
+          </div>`;
+      }).join('')}
+    </div>`;
+  } else if (tabName === 'minutes') {
+    documentOutput.innerHTML = `<div id="export-target-minutes" class="whitespace-pre-wrap prose max-w-none">${marked.parse(docData)}</div>`;
+  } else if (tabName === 'decisions') {
+    documentOutput.innerHTML = `<ul id="export-target-decisions" class="list-disc pl-5 space-y-2">
+      ${docData.map(d => `<li class="p-2 bg-white rounded-md shadow-sm border border-gray-100">${escapeHtml(d)}</li>`).join('')}
+    </ul>`;
+  } else if (tabName === 'actionplan') {
+    documentOutput.innerHTML = `
+      <div id="export-target-actionplan" class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-emerald-100">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Action Item</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Owner</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Deadline</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            ${docData.map(item => `
+              <tr>
+                <td class="px-6 py-4 whitespace-normal text-sm text-gray-900">${escapeHtml(item.task)}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-medium">${escapeHtml(item.owner)}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${escapeHtml(item.deadline)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+}
+
         
         // --- Metadata Helper Functions ---
 
@@ -806,4 +810,5 @@ The output MUST be a JSON object conforming strictly to the provided schema. Do 
     </script>
 </body>
 </html>
+
 

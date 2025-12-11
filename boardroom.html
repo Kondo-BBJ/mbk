@@ -663,77 +663,84 @@
                 `${p.name} (Role: ${p.role}, Personality: ${p.personality})` 
             ).join(', ');
 
-            const systemPrompt = `You are a professional corporate AI Meeting Facilitator and Scribe for a global Commodity Trading and Investment company. Your task is to simulate a critical board meeting based on the provided agenda, roles, and personalities, and output the results as a single, perfectly structured JSON object.
+           const systemPrompt = `
+You are a professional corporate AI Meeting Facilitator and Scribe for a global Commodity Trading and Investment company. 
+Your task is to simulate a critical board meeting based on the provided agenda, roles, and personalities, and output the results as a single, perfectly structured JSON object.
 
 The discussion MUST reflect the specialized roles in commodity trading:
 - Front Office roles (e.g., Commodity Trader, Portfolio Manager) will push for higher returns, leverage, and new market opportunities.
 - Middle Office roles (e.g., Chief Risk Officer, Compliance Officer) will focus on risk limits, regulatory adherence, hedging strategies, and control.
 - Executive roles will focus on overall strategy, capital allocation, and stakeholder value.
 
-Simulate the full discussion flow where each participant debates, objects, and contributes according to their assigned role, division, and personality. The output discussionScript MUST use the participant's NAME and Role as the speaker for each dialogue turn, formatted as "Name (Role/Division)" (e.g., "Jane Smith (CEO): ...").
+Simulate the full discussion flow where each participant debates, objects, and contributes according to their assigned role, division, and personality. 
+The output discussionScript MUST use the participant's NAME and Role as the speaker for each dialogue turn, formatted as "Name (Role/Division): ...".
 
-After the simulation, generate three professional corporate documents based on the outcomes:
-1.  **Meeting Minutes:** A detailed, professional narrative summary of the discussion points, key arguments, and final resolutions.
-2.  **Key Decisions:** A concise bulleted list of the final, approved decisions.
-3.  **Action Plan:** A structured table of tasks, clear owners, and suggested deadlines for implementing the decisions.
+After the simulation, you MUST generate three professional corporate documents based on the outcomes. 
+Each document MUST be non-empty and professionally written:
+1. "meetingMinutes": A detailed, professional narrative summary of the discussion points, key arguments, and final resolutions. If no resolution is reached, summarize disagreements.
+2. "keyDecisions": A concise bulleted list of the final, approved decisions. If no decisions are made, explicitly state "No decisions were finalized."
+3. "actionPlan": A structured list of tasks, clear owners, and suggested deadlines for implementing the decisions. If no tasks exist, include at least one placeholder task with "TBD" owner and deadline.
 
-The output MUST be a JSON object conforming strictly to the provided schema. Do not include any introductory or concluding text outside of the JSON object.`;
+The output MUST be a JSON object conforming strictly to the provided schema. Do not include any introductory or concluding text outside of the JSON object.
+`;
 
-            const userQuery = `
-                Meeting Title: ${meetingTitle}
-                Participants: ${participantList}
-                Agenda: ${agenda}
-            `;
+const userQuery = `
+Meeting Title: ${meetingTitle}
+Participants: ${participantList}
+Agenda: ${agenda}
+`;
 
-            const responseSchema = {
-                type: "OBJECT",
-                properties: {
-                    "discussionScript": {
-                        type: "ARRAY",
-                        description: "A chronological list of dialogue turns between the participants, showing the discussion flow.",
-                        items: {
-                            type: "OBJECT",
-                            properties: {
-                                "speaker": { "type": "STRING" }, 
-                                "dialogue": { "type": "STRING" }
-                            },
-                            required: ["speaker", "dialogue"]
-                        }
-                    },
-                    "meetingMinutes": { 
-                        type: "STRING", 
-                        description: "A detailed, narrative summary of the board's discussion, arguments, and final resolutions." 
-                    },
-                    "keyDecisions": {
-                        type: "ARRAY",
-                        description: "A bulleted list of the final, approved decisions from the meeting.",
-                        items: { type: "STRING" }
-                    },
-                    "actionPlan": {
-                        type: "ARRAY",
-                        description: "A structured list of tasks, owners, and deadlines for follow-up actions.",
-                        items: {
-                            type: "OBJECT",
-                            properties: {
-                                "task": { "type": "STRING" },
-                                "owner": { "type": "STRING" },
-                                "deadline": { "type": "STRING" }
-                            },
-                            required: ["task", "owner", "deadline"]
-                        }
-                    }
-                },
-                required: ["discussionScript", "meetingMinutes", "keyDecisions", "actionPlan"]
-            };
-            
-            // CONSTRUCT THE PROXY PAYLOAD
-            const proxyPayload = {
-                prompt: `System Prompt: ${systemPrompt}\n\nUser Query: ${userQuery}`,
-                generationConfig: {
-                    responseMimeType: "application/json",
-                    responseSchema: responseSchema
-                }
-            };
+const responseSchema = {
+  type: "OBJECT",
+  properties: {
+    "discussionScript": {
+      type: "ARRAY",
+      description: "A chronological list of dialogue turns between the participants, showing the discussion flow.",
+      items: {
+        type: "OBJECT",
+        properties: {
+          "speaker": { type: "STRING" }, 
+          "dialogue": { type: "STRING" }
+        },
+        required: ["speaker", "dialogue"]
+      }
+    },
+    "meetingMinutes": { 
+      type: "STRING", 
+      description: "A detailed, narrative summary of the board's discussion, arguments, and final resolutions. Must not be empty." 
+    },
+    "keyDecisions": {
+      type: "ARRAY",
+      description: "A bulleted list of the final, approved decisions from the meeting. Must contain at least one item.",
+      items: { type: "STRING" }
+    },
+    "actionPlan": {
+      type: "ARRAY",
+      description: "A structured list of tasks, owners, and deadlines for follow-up actions. Must contain at least one item.",
+      items: {
+        type: "OBJECT",
+        properties: {
+          "task": { type: "STRING" },
+          "owner": { type: "STRING" },
+          "deadline": { type: "STRING" }
+        },
+        required: ["task", "owner", "deadline"]
+      }
+    }
+  },
+  required: ["discussionScript", "meetingMinutes", "keyDecisions", "actionPlan"]
+};
+
+const proxyPayload = {
+  prompt: `System Prompt: ${systemPrompt}\n\nUser Query: ${userQuery}`,
+  generationConfig: {
+    responseMimeType: "application/json",
+    responseSchema: responseSchema,
+    temperature: 0.7,
+    candidateCount: 1
+  }
+};
+
 
             try {
                 let response;
@@ -810,3 +817,4 @@ The output MUST be a JSON object conforming strictly to the provided schema. Do 
     </script>
 </body>
 </html>
+
